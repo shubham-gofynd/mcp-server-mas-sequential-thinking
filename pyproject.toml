@@ -4,13 +4,34 @@ version = "0.1.0"
 description = "MCP Agent Implementation for Sequential Thinking"
 readme = "README.md"
 requires-python = ">=3.10"
+authors = [
+    { name = "Frad LEE", email = "fradser@gmail.com" },
+]
 dependencies = [
-    "mcp-agent",
+    "agno",
     "asyncio",
+    "exa-py",
+    "python-dotenv",
+    "mcp",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "pytest",
+    "black",
+    "isort",
+    "mypy",
+]
+
+[project.scripts]
+mcp-server-mas-sequential-thinking = "main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
     "pytest",
     "black",
     "isort",
