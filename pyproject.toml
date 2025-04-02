@@ -1,0 +1,18 @@
+[project]
+name = "mcp-server-mas-sequential-thinking"
+version = "0.1.0"
+description = "MCP Agent Implementation for Sequential Thinking"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp-agent",
+    "asyncio",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "isort",
+    "mypy",
+]
