@@ -1,298 +1,225 @@
-# Sequential Thinking Multi-Agent System (MAS)
+# Sequential Thinking Multi-Agent System (MAS) ![](https://img.shields.io/badge/A%20FRAD%20PRODUCT-WIP-yellow)
 
-A FastMCP-based Multi-Agent System implementing sequential thinking through coordinated specialized agents. This system leverages the power of multiple intelligent agents working in concert to break down complex problems and process them through structured thinking steps.
+[![Twitter Follow](https://img.shields.io/twitter/follow/FradSer?style=social)](https://twitter.com/FradSer) [![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/) [![Framework](https://img.shields.io/badge/Framework-Agno-orange.svg)](https://github.com/cognitivecomputations/agno) 
+
+English | [简体中文](README.zh-CN.md)
+
+This project implements an advanced sequential thinking process using a **Multi-Agent System (MAS)** built with the **Agno** framework and served via **MCP**. It represents a significant evolution from simpler state-tracking approaches, leveraging coordinated specialized agents for deeper analysis and problem decomposition.
 
 ## Overview
 
-The server provides a sophisticated sequential thinking tool powered by a true Multi-Agent System (MAS) architecture:
-- Processes complex problems through coordinated multi-agent analysis with specialized roles
-- Maintains structured thought chains with support for revisions and branches
-- Integrates with external knowledge sources through the Researcher agent
-- Provides detailed logging for process tracking and debugging
-- Delivers higher quality analysis than single-agent approaches through specialized expertise
+This server provides a sophisticated `sequentialthinking` tool designed for complex problem-solving. Unlike [its predecessor](https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking), this version utilizes a true Multi-Agent System (MAS) architecture where:
 
-> **Token Consumption Warning**: Due to the Multi-Agent System architecture, this tool consumes significantly more tokens than single-agent alternatives. Each thought invokes multiple specialized agents working in parallel, resulting in 3-5x higher token usage compared to traditional approaches. Consider this when planning usage and budgeting.
+* **A Coordinating Agent** (the `Team` object in `coordinate` mode) manages the workflow.
+* **Specialized Agents** (Planner, Researcher, Analyzer, Critic, Synthesizer) handle specific sub-tasks based on their defined roles and expertise.
+* Incoming thoughts are actively **processed, analyzed, and synthesized** by the agent team, not just logged.
+* The system supports complex thought patterns including **revisions** of previous steps and **branching** to explore alternative paths.
+* Integration with external tools like **Exa** (via the Researcher agent) allows for dynamic information gathering.
+* Robust **Pydantic** validation ensures data integrity for thought steps.
+* Detailed **logging** tracks the process, including agent interactions (handled by the coordinator).
 
-## Core Components
+The goal is to achieve a higher quality of analysis and a more nuanced thinking process than possible with a single agent or simple state tracking, by harnessing the power of specialized roles working collaboratively.
 
-### Multi-Agent System Architecture
+## Key Differences from Original Version (TypeScript)
 
-The system implements a true Multi-Agent System with specialized agents, each having distinct expertise:
+This Python/Agno implementation marks a fundamental shift from the original TypeScript version:
 
-1. **Team Coordinator**
-   - Orchestrates the entire thinking process
-   - Breaks down tasks into subtasks
-   - Explicitly delegates work to specialized agents
-   - Synthesizes team outputs into coherent responses
-   - Maintains quality and logical progression
+| Feature/Aspect      | Python/Agno Version (Current)                                        | TypeScript Version (Original)                        |
+| :------------------ | :------------------------------------------------------------------- | :--------------------------------------------------- |
+| **Architecture** | **Multi-Agent System (MAS)**; Active processing by a team of agents. | **Single Class State Tracker**; Simple logging/storing. |
+| **Intelligence** | **Distributed Agent Logic**; Embedded in specialized agents & Coordinator. | **External LLM Only**; No internal intelligence.     |
+| **Processing** | **Active Analysis & Synthesis**; Agents *act* on the thought.      | **Passive Logging**; Merely recorded the thought.    |
+| **Frameworks** | **Agno (MAS) + FastMCP (Server)**; Uses dedicated MAS library.     | **MCP SDK only**.                                    |
+| **Coordination** | **Explicit Team Coordination Logic** (`Team` in `coordinate` mode).  | **None**; No coordination concept.                   |
+| **Validation** | **Pydantic Schema Validation**; Robust data validation.            | **Basic Type Checks**; Less reliable.              |
+| **External Tools** | **Integrated (Exa via Researcher)**; Can perform research tasks.   | **None**.                                            |
+| **Logging** | **Structured Python Logging (File + Console)**; Configurable.      | **Console Logging with Chalk**; Basic.             |
+| **Language & Ecosystem** | **Python**; Leverages Python AI/ML ecosystem.                    | **TypeScript/Node.js**.                              |
 
-2. **Strategic Planner**
-   - Develops strategic approaches
-   - Evaluates steps and their implications
-   - Considers timeline and resource impacts
+In essence, the system evolved from a passive thought *recorder* to an active thought *processor* powered by a collaborative team of AI agents.
 
-3. **Researcher**
-   - Gathers information using Exa search tools
-   - Validates data from external sources
-   - Synthesizes findings into actionable insights
+## How it Works (Coordinate Mode)
 
-4. **Core Analyzer**
-   - Performs deep analysis
-   - Identifies patterns and relationships
-   - Generates insights and implications
+1.  **Initiation:** An external LLM uses the `sequential-thinking-starter` prompt to define the problem and initiate the process.
+2.  **Tool Call:** The LLM calls the `sequentialthinking` tool with the first (or subsequent) thought, structured according to the `ThoughtData` model.
+3.  **Validation & Logging:** The tool receives the call, validates the input using Pydantic, logs the incoming thought, and updates the history/branch state via `AppContext`.
+4.  **Coordinator Invocation:** The core thought content (with context about revisions/branches) is passed to the `SequentialThinkingTeam`'s `arun` method.
+5.  **Coordinator Analysis & Delegation:** The `Team` (acting as Coordinator) analyzes the input thought, breaks it into sub-tasks, and delegates these sub-tasks to the *most relevant* specialist agents (e.g., Analyzer for analysis tasks, Researcher for information needs).
+6.  **Specialist Execution:** Delegated agents execute their specific sub-tasks using their instructions, models, and tools (like `ThinkingTools` or `ExaTools`).
+7.  **Response Collection:** Specialists return their results to the Coordinator.
+8.  **Synthesis & Guidance:** The Coordinator synthesizes the specialists' responses into a single, cohesive output. It may include recommendations for revision or branching based on the specialists' findings (especially the Critic and Analyzer). It also adds guidance for the LLM on formulating the next thought.
+9.  **Return Value:** The tool returns a JSON string containing the Coordinator's synthesized response, status, and updated context (branches, history length).
+10. **Iteration:** The calling LLM uses the Coordinator's response and guidance to formulate the next `sequentialthinking` tool call, potentially triggering revisions or branches as suggested.
 
-5. **Quality Controller (Critic)**
-   - Evaluates logical consistency
-   - Identifies potential biases and gaps
-   - Suggests specific improvements
+## Token Consumption Warning
 
-6. **Integration Specialist (Synthesizer)**
-   - Combines insights from multiple sources
-   - Forms coherent conclusions
-   - Structures information clearly
+⚠️ **High Token Usage:** Due to the Multi-Agent System architecture, this tool consumes significantly **more tokens** than single-agent alternatives or the previous TypeScript version. Each `sequentialthinking` call invokes:
+    * The Coordinator agent (the `Team` itself).
+    * Multiple specialist agents (potentially Planner, Researcher, Analyzer, Critic, Synthesizer, depending on the Coordinator's delegation).
 
-### Coordination Architecture
+This parallel processing leads to substantially higher token usage (potentially 3-6x or more per thought step) compared to single-agent or state-tracking approaches. Budget and plan accordingly. This tool prioritizes **analysis depth and quality** over token efficiency.
 
-The system implements Agno's **Coordinate Mode** architecture:
+## Prerequisites
 
-1. **Task Receipt & Analysis**
-   - Coordinator receives the thought input
-   - Analyzes thought content and context
-   - Determines required expertise
+* Python 3.10+
+* Access to a compatible LLM API (configured for `agno`, e.g., DeepSeek)
+    * `DEEPSEEK_API_KEY` environment variable.
+* Exa API Key (if using the Researcher agent's capabilities)
+    * `EXA_API_KEY` environment variable.
+* `uv` package manager (recommended) or `pip`.
 
-2. **Task Decomposition**
-   - Breaks thought into specialized subtasks
-   - Maps subtasks to team member expertise
-   - Creates explicit delegation plan
+## MCP Server Configuration (Client-Side)
 
-3. **Parallel Processing**
-   - Team members work on assigned subtasks
-   - Each member applies specialized expertise
-   - Processing occurs in parallel when possible
+This server runs as a standard executable script that communicates via stdio, as expected by MCP. The exact configuration method depends on your specific MCP client implementation. Consult your client's documentation for details.
 
-4. **Output Synthesis**
-   - Coordinator collects all team members' outputs
-   - Synthesizes into coherent, structured response
-   - Ensures logical flow and comprehensive coverage
-
-5. **Quality Assurance**
-   - Evaluates against success criteria
-   - Ensures all aspects of thought addressed
-   - Maintains consistency across thought chain
-
-This coordination architecture ensures optimal utilization of specialized agent capabilities while maintaining coherent output structure and logical progression.
-
-## Requirements
-
-- Python 3.10 or higher
-- DeepSeek API key
-- Exa API key (for research capabilities)
-- uv package manager (recommended for dependency management)
-
-## Environment Setup
-
-1. Set required environment variables:
-```bash
-export DEEPSEEK_API_KEY="your_key_here"
-export DEEPSEEK_BASE_URL="your_url_here"
-export EXA_API_KEY="your_key_here"  # Required for research capabilities
+```
+{
+  "mcpServers": {
+      "mas-sequential-thinking": {
+         "command": "uvx",
+         "args": [
+            "mcp-server-mas-sequential-thinking"
+         ],
+         env": {
+            "DEEPSEEK_API_KEY": "your_deepseek_api_key",
+            "DEEPSEEK_BASE_URL": "your_base_url_if_needed", # Optional: If using a custom endpoint
+            "EXA_API_KEY": "your_exa_api_key"
+         }
+      }
+   }
+}  
 ```
 
-2. Install dependencies using uv (recommended for faster installation):
-```bash
-# Install uv if not already installed
-curl -LsSf https://astral.sh/uv/install.sh | sh
+## Installation & Setup
 
-# Install dependencies
-uv pip install -e .
-```
+1.  **Clone the repository:**
+    ```bash
+    git clone git@github.com:FradSer/mcp-server-mas-sequential-thinking.git
+    cd mcp-server-mas-sequential-thinking
+    ```
 
-Alternatively, use pip:
-```bash
-pip install -e .
-```
+2.  **Set Environment Variables:**
+    Create a `.env` file in the root directory or export the variables:
+    ```dotenv
+    # Required for the LLM used by Agno agents/team
+    DEEPSEEK_API_KEY="your_deepseek_api_key"
+    # DEEPSEEK_BASE_URL="your_base_url_if_needed" # Optional: If using a custom endpoint
 
-## Token Consumption Considerations
+    # Required ONLY if the Researcher agent is used and needs Exa
+    EXA_API_KEY="your_exa_api_key"
+    ```
 
-This Multi-Agent System is designed for depth of analysis rather than efficiency of token usage. Here are important considerations:
+3.  **Install Dependencies:**
 
-1. **High Token Consumption**
-   - Each thought step activates 5-6 specialized agents
-   - Coordinator agent performs additional processing for task delegation and synthesis
-   - Complete analysis can consume 3-5x more tokens than single-agent alternatives
+    * **Using `uv` (Recommended):**
+        ```bash
+        # Install uv if you don't have it:
+        # curl -LsSf [https://astral.sh/uv/install.sh](https://astral.sh/uv/install.sh) | sh
+        # source $HOME/.cargo/env # Or restart your shell
 
-2. **Scaling Considerations**
-   - Token usage scales linearly with complexity of thoughts
-   - Lengthier inputs result in proportionally higher token usage
-   - Each agent receives context from the coordinator, multiplying context costs
-
-3. **Optimization Strategies**
-   - Use concise, focused thought descriptions
-   - Consider limiting total number of thoughts for simpler problems
-   - Break extremely complex problems into separate sequential thinking chains
-   - Monitor token usage through logging to identify optimization opportunities
-
-4. **When to Use**
-   - Complex problems requiring multi-disciplinary expertise
-   - Critical analyses where depth and quality outweigh token costs
-   - Scenarios benefiting from diverse perspectives and specialized knowledge
+        uv pip install -r requirements.txt
+        # Or if a pyproject.toml exists with dependencies:
+        # uv pip install .
+        ```
+    * **Using `pip`:**
+        ```bash
+        pip install -r requirements.txt
+        # Or if a pyproject.toml exists with dependencies:
+        # pip install .
+        ```
 
 ## Usage
 
-The server exposes the `sequentialthinking` tool through MCP, which processes thoughts with the following parameters:
+Run the server script (assuming the main script is named `main.py` or similar based on your file structure):
+
+```bash
+python your_main_script_name.py
+```
+
+The server will start and listen for requests via stdio, making the `sequentialthinking` tool available to compatible MCP clients (like certain LLMs or testing frameworks).
+
+### `sequentialthinking` Tool Parameters
+
+The tool expects arguments matching the `ThoughtData` Pydantic model:
 
 ```python
+# Simplified representation
 {
-    "thought": str,              # The current thinking step
-    "thoughtNumber": int,        # Current sequence number (≥1)
-    "totalThoughts": int,        # Estimated total thoughts needed (≥5)
-    "nextThoughtNeeded": bool,   # Whether another thought step is needed
-    "isRevision": bool,          # Optional: Whether this revises previous thinking
-    "revisesThought": int,       # Optional: Which thought is being reconsidered
-    "branchFromThought": int,    # Optional: Branch point thought number
-    "branchId": str,             # Optional: Branch identifier
-    "needsMoreThoughts": bool    # Optional: If more thoughts needed beyond estimate
+    "thought": str,              # Content of the current thought/step
+    "thoughtNumber": int,        # Sequence number (>=1)
+    "totalThoughts": int,        # Estimated total steps (>=1, suggest >=5)
+    "nextThoughtNeeded": bool,   # Is another step required after this?
+    "isRevision": bool = False,  # Is this revising a previous thought?
+    "revisesThought": Optional[int] = None, # If isRevision, which thought number?
+    "branchFromThought": Optional[int] = None, # If branching, from which thought?
+    "branchId": Optional[str] = None, # Unique ID for the branch
+    "needsMoreThoughts": bool = False # Signal if estimate is too low before last step
 }
 ```
 
-### Enhanced Features
+### Interacting with the Tool (Conceptual Example)
 
-The system includes several advanced features to ensure comprehensive analysis:
+An LLM would interact with this tool iteratively:
 
-1. **Minimum Analysis Depth**
-   - Automatically enforces a minimum of 5 thinking steps
-   - Adjusts totalThoughts parameter if set below the minimum
-   - Ensures sufficient depth for multi-agent analysis
+1.  **LLM:** Uses `sequential-thinking-starter` prompt with the problem.
+2.  **LLM:** Calls `sequentialthinking` tool with `thoughtNumber: 1`, initial `thought` (e.g., "Plan the analysis..."), `totalThoughts` estimate, `nextThoughtNeeded: True`.
+3.  **Server:** MAS processes the thought -> Coordinator synthesizes response & provides guidance (e.g., "Analysis plan complete. Suggest researching X next. No revisions recommended yet.").
+4.  **LLM:** Receives JSON response containing `coordinatorResponse`.
+5.  **LLM:** Formulates the next thought (e.g., "Research X using Exa...") based on the `coordinatorResponse`.
+6.  **LLM:** Calls `sequentialthinking` tool with `thoughtNumber: 2`, the new `thought`, updated `totalThoughts` (if needed), `nextThoughtNeeded: True`.
+7.  **Server:** MAS processes -> Coordinator synthesizes (e.g., "Research complete. Findings suggest a flaw in thought #1's assumption. RECOMMENDATION: Revise thought #1...").
+8.  **LLM:** Receives response, sees the recommendation.
+9.  **LLM:** Formulates a revision thought.
+10. **LLM:** Calls `sequentialthinking` tool with `thoughtNumber: 3`, the revision `thought`, `isRevision: True`, `revisesThought: 1`, `nextThoughtNeeded: True`.
+11. **... and so on, potentially branching or extending as needed.**
 
-2. **Automatic Step Guidance**
-   - Provides contextual guidance for next steps based on current position
-   - Suggests appropriate focus areas as the analysis progresses
-   - Helps maintain logical progression through the thinking process
+### Tool Response Format
 
-3. **Flexible Step Planning**
-   - Adapts to problem complexity without enforcing rigid structures
-   - Allows external LLMs to determine appropriate step count (minimum 5)
-   - Maintains balance between structure and flexibility
+The tool returns a JSON string containing:
 
-4. **Smart Parameter Validation**
-   - Validates and adjusts nextThoughtNeeded for logical consistency
-   - Ensures proper sequencing of thought numbers
-   - Maintains thought chain integrity
-
-### Example Usage
-
-```python
-from mcp.client import MCPClient
-
-client = MCPClient()
-
-# Example of an initial step with flexible approach
-response = await client.call_tool("sequentialthinking", {
-    "thought": """Plan a comprehensive analysis approach for solving this problem.
-    Objectives for team members:
-    - Strategic Planner: Develop a framework for analyzing the core components
-    - Researcher: Identify key information needs and potential data sources
-    - Analyzer: Establish metrics and analysis methodology
-    - Critic: Define success criteria and potential failure points
-    - Synthesizer: Create structure for integrating diverse perspectives""",
-    "thoughtNumber": 1,
-    "totalThoughts": 5,  # Minimum required steps
-    "nextThoughtNeeded": True
-})
-
-# Example of a revision step
-response = await client.call_tool("sequentialthinking", {
-    "thought": "Revisit and deepen the analysis of critical components, focusing on edge cases and potential failure modes",
-    "thoughtNumber": 3,
-    "totalThoughts": 5,
-    "nextThoughtNeeded": True,
-    "isRevision": True,
-    "revisesThought": 2
-})
-
-# Example of a parallel analysis branch
-response = await client.call_tool("sequentialthinking", {
-    "thought": "Explore alternative approaches based on the evaluation results",
-    "thoughtNumber": 4,
-    "totalThoughts": 5,
-    "nextThoughtNeeded": True,
-    "branchFromThought": 2,
-    "branchId": "alternative_analysis"
-})
+```json
+{
+  "processedThoughtNumber": int,
+  "estimatedTotalThoughts": int,
+  "nextThoughtNeeded": bool,
+  "coordinatorResponse": "Synthesized output from the agent team, including analysis, findings, and guidance for the next step...",
+  "branches": ["list", "of", "branch", "ids"],
+  "thoughtHistoryLength": int,
+  "branchDetails": {
+    "currentBranchId": "main | branchId",
+    "branchOriginThought": null | int,
+    "allBranches": {"main": count, "branchId": count, ...}
+  },
+  "isRevision": bool,
+  "revisesThought": null | int,
+  "isBranch": bool,
+  "status": "success | validation_error | failed",
+  "error": "Error message if status is not success" // Optional
+}
 ```
-
-### Recommended Analysis Process
-
-The server supports a flexible multi-step analysis process with a minimum of 5 steps:
-
-1. **Initial Planning** (Typically Step 1)
-   - Problem decomposition
-   - Analysis framework setup
-   - Team member engagement planning
-
-2. **Research Phase** (Typically Step 2)
-   - Information gathering
-   - Data validation
-   - Context establishment
-
-3. **Deep Analysis** (Typically Step 3)
-   - Pattern identification
-   - Relationship mapping
-   - Core insight generation
-
-4. **Evaluation and Synthesis** (Typically Step 4)
-   - Multi-perspective assessment
-   - Integration of findings
-   - Framework development
-
-5. **Conclusions and Recommendations** (Typically Step 5)
-   - Action item development
-   - Key insight compilation
-   - Next steps outline
-
-Additional steps can be added for complex problems requiring deeper analysis. The system also supports revision steps and parallel analysis branches for comprehensive exploration.
 
 ## Logging
 
-The server implements comprehensive logging with both file and console handlers:
-- Log files are stored in `~/.sequential_thinking/logs`
-- Rotating file handler with 10MB max size and 5 backups
-- Console output for INFO level and above
-- Detailed formatting with timestamps and log levels
+* Logs are written to `~/.sequential_thinking/logs/sequential_thinking.log`.
+* Uses Python's standard `logging` module.
+* Includes rotating file handler (10MB limit, 5 backups) and console handler (INFO level).
+* Logs include timestamps, levels, logger names, and messages, including formatted thought representations.
 
 ## Development
 
-For development work:
-1. Clone the repository
-2. Install development dependencies using uv (recommended):
-```bash
-uv pip install -e ".[dev]"
-```
-Or with pip:
-```bash
-pip install -e ".[dev]"
-```
-3. Ensure environment variables are set
-4. Run the server:
-```bash
-python main.py
-```
+(Add development guidelines here if applicable, e.g., setting up dev environments, running tests, linting.)
 
-## Error Handling
-
-The server includes robust error handling for:
-- Input validation through Pydantic models
-- API key verification
-- Agent initialization failures
-- Tool execution errors
+1.  Clone the repository.
+2.  Set up a virtual environment.
+3.  Install dependencies, potentially including development extras:
+    ```bash
+    # Using uv
+    uv pip install -e ".[dev]"
+    # Using pip
+    pip install -e ".[dev]"
+    ```
+4.  Run linters/formatters/tests.
 
 ## License
 
-[License information here]
-
-This project uses:
-- DeepSeek Chat API for agent intelligence
-- Exa API for research capabilities
-- FastMCP for server implementation
-- Agno framework for multi-agent coordination
-- uv package manager for dependency management
+MIT
