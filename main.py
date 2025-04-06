@@ -4,11 +4,14 @@ import sys
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional, Type
 
 from mcp.server.fastmcp import FastMCP
 from agno.agent import Agent
+from agno.models.base import Model
 from agno.models.deepseek import DeepSeek
+from agno.models.groq import Groq
+from agno.models.openrouter import OpenRouter
 from agno.team.team import Team
 from agno.tools.exa import ExaTools
 from agno.tools.thinking import ThinkingTools
@@ -16,12 +19,12 @@ from dotenv import load_dotenv
 from pydantic import (BaseModel, ConfigDict, Field, ValidationError,
                       field_validator, model_validator)
 
-# Add logging imports and setup
 import logging
 import logging.handlers
 from pathlib import Path
 
-# Configure logging system
+load_dotenv()
+
 def setup_logging() -> logging.Logger:
     """
     Set up application logging with both file and console handlers.
@@ -66,13 +69,7 @@ def setup_logging() -> logging.Logger:
 
     return logger
 
-# Initialize logger
 logger = setup_logging()
-
-# Load environment variables from .env file
-load_dotenv()
-
-# --- Pydantic Model for Tool Input Schema ---
 
 class ThoughtData(BaseModel):
     """
@@ -294,6 +291,44 @@ def format_thought_for_log(thought_data: ThoughtData) -> str:
 
 # --- Agno Multi-Agent Team Setup ---
 
+def get_model_config() -> tuple[Type[Model], str, str]:
+    """
+    Determines the LLM provider, team model ID, and agent model ID based on environment variables.
+
+    Returns:
+        A tuple containing:
+        - ModelClass: The Agno model class (e.g., DeepSeek, Groq, OpenRouter).
+        - team_model_id: The model ID for the team coordinator.
+        - agent_model_id: The model ID for the specialist agents.
+    """
+    provider = os.environ.get("LLM_PROVIDER", "deepseek").lower()
+    logger.info(f"Selected LLM Provider: {provider}")
+
+    if provider == "deepseek":
+        ModelClass = DeepSeek
+        # Use environment variables for DeepSeek model IDs if set, otherwise use defaults
+        team_model_id = os.environ.get("DEEPSEEK_TEAM_MODEL_ID", "deepseek-chat")
+        agent_model_id = os.environ.get("DEEPSEEK_AGENT_MODEL_ID", "deepseek-chat")
+        logger.info(f"Using DeepSeek: Team Model='{team_model_id}', Agent Model='{agent_model_id}'")
+    elif provider == "groq":
+        ModelClass = Groq
+        team_model_id = os.environ.get("GROQ_TEAM_MODEL_ID", "deepseek-r1-distill-llama-70b")
+        agent_model_id = os.environ.get("GROQ_AGENT_MODEL_ID", "deepseek-r1-distill-llama-70b")
+        logger.info(f"Using Groq: Team Model='{team_model_id}', Agent Model='{agent_model_id}'")
+    elif provider == "openrouter":
+        ModelClass = OpenRouter
+        team_model_id = os.environ.get("OPENROUTER_TEAM_MODEL_ID", "deepseek/deepseek-chat-v3-0324")
+        agent_model_id = os.environ.get("OPENROUTER_AGENT_MODEL_ID", "deepseek/deepseek-chat-v3-0324")
+        logger.info(f"Using OpenRouter: Team Model='{team_model_id}', Agent Model='{agent_model_id}'")
+    else:
+        logger.error(f"Unsupported LLM_PROVIDER: {provider}. Defaulting to DeepSeek.")
+        ModelClass = DeepSeek
+        team_model_id = "deepseek-chat"
+        agent_model_id = "deepseek-chat"
+
+    return ModelClass, team_model_id, agent_model_id
+
+
 def create_sequential_thinking_team() -> Team:
     """
     Creates and configures the Agno multi-agent team for sequential thinking,
@@ -303,12 +338,13 @@ def create_sequential_thinking_team() -> Team:
         An initialized Team instance.
     """
     try:
-        # Use a capable model for the team coordinator logic and specialists
-        # The Team itself needs a model for its coordination instructions.
-        team_model = DeepSeek(id="deepseek-chat")
+        ModelClass, team_model_id, agent_model_id = get_model_config()
+        team_model_instance = ModelClass(id=team_model_id)
+        agent_model_instance = ModelClass(id=agent_model_id)
+
     except Exception as e:
-        logger.error(f"Error initializing base model: {e}")
-        logger.error("Please ensure the necessary API keys and configurations are set.")
+        logger.error(f"Error initializing models: {e}")
+        logger.error("Please ensure the necessary API keys and configurations are set for the selected provider ({os.environ.get('LLM_PROVIDER', 'deepseek')}).")
         sys.exit(1)
 
     # REMOVED the separate Coordinator Agent definition.
@@ -334,7 +370,7 @@ def create_sequential_thinking_team() -> Team:
             " 7. Return your response to the Team Coordinator.",
             "Focus on fulfilling the delegated planning sub-task accurately and efficiently.",
         ],
-        model=team_model, # Specialists can use the same model or different ones
+        model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
         markdown=True
     )
@@ -358,7 +394,7 @@ def create_sequential_thinking_team() -> Team:
             " 7. Return your response to the Team Coordinator.",
             "Focus on accuracy and relevance for the delegated research request.",
         ],
-        model=team_model,
+        model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
         markdown=True
     )
@@ -382,7 +418,7 @@ def create_sequential_thinking_team() -> Team:
             " 7. Return your response to the Team Coordinator.",
             "Focus on depth and clarity for the delegated analytical task.",
         ],
-        model=team_model,
+        model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
         markdown=True
     )
@@ -407,7 +443,7 @@ def create_sequential_thinking_team() -> Team:
             " 8. Return your response to the Team Coordinator.",
             "Focus on rigorous and constructive critique for the delegated evaluation task.",
         ],
-        model=team_model,
+        model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
         markdown=True
     )
@@ -430,7 +466,7 @@ def create_sequential_thinking_team() -> Team:
             " 6. Return your response to the Team Coordinator.",
             "Focus on creating clarity and coherence for the delegated synthesis task.",
         ],
-        model=team_model,
+        model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
         markdown=True
     )
@@ -441,7 +477,7 @@ def create_sequential_thinking_team() -> Team:
         name="SequentialThinkingTeam",
         mode="coordinate",
         members=[planner, researcher, analyzer, critic, synthesizer], # ONLY specialist agents
-        model=team_model, # Model for the Team's coordination logic
+        model=team_model_instance, # Model for the Team's coordination logic
         description="You are the Coordinator of a specialist team processing sequential thoughts. Your role is to manage the flow, delegate tasks, and synthesize results.",
         instructions=[
             f"Current date and time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
@@ -515,9 +551,17 @@ async def app_lifespan() -> AsyncIterator[None]:
     """Manages the application lifecycle."""
     global app_context
     logger.info("Initializing application resources (Coordinate Mode)...")
-    team = create_sequential_thinking_team()
-    app_context = AppContext(team=team)
-    logger.info("Agno team initialized in coordinate mode.")
+    try:
+        team = create_sequential_thinking_team()
+        app_context = AppContext(team=team)
+        provider = os.environ.get("LLM_PROVIDER", "deepseek").lower()
+        logger.info(f"Agno team initialized in coordinate mode using provider: {provider}.")
+    except Exception as e:
+        logger.critical(f"Failed to initialize Agno team during lifespan setup: {e}", exc_info=True)
+        # Decide how to handle this - re-raise, exit, or continue without a team?
+        # For now, re-raise to prevent server starting in a broken state.
+        raise e
+
     try:
         yield
     finally:
@@ -598,7 +642,20 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
     global app_context
     if not app_context or not app_context.team:
         logger.error("Application context or Agno team not initialized during tool call.")
-        raise Exception("Critical Error: Application context not available.")
+        # Attempt re-initialization cautiously, or fail hard.
+        # Let's try re-initialization if app_lifespan wasn't used or failed silently.
+        logger.warning("Attempting to re-initialize team due to missing context...")
+        try:
+             team = create_sequential_thinking_team()
+             app_context = AppContext(team=team) # Re-create context
+             logger.info("Successfully re-initialized team and context.")
+        except Exception as init_err:
+             logger.critical(f"Failed to re-initialize Agno team during tool call: {init_err}", exc_info=True)
+             return json.dumps({
+                 "error": "Critical Error: Application context not available and re-initialization failed.",
+                 "status": "critical_failure"
+             }, indent=2)
+             # Or raise Exception("Critical Error: Application context not available.")
 
     MIN_TOTAL_THOUGHTS = 5 # Keep a minimum suggestion
 
@@ -731,7 +788,9 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
 
 def run():
     """Initializes and runs the MCP server in coordinate mode."""
-    logger.info("Initializing Sequential Thinking Server (Coordinate Mode)...")
+    selected_provider = os.environ.get("LLM_PROVIDER", "deepseek").lower()
+    logger.info(f"Using provider: {selected_provider}")
+    logger.info(f"Initializing Sequential Thinking Server (Coordinate Mode) with Provider: {selected_provider}...")
 
     global app_context
     # Initialize application resources using the lifespan manager implicitly if running via framework
@@ -742,7 +801,7 @@ def run():
         try:
              team = create_sequential_thinking_team()
              app_context = AppContext(team=team)
-             logger.info("Agno team initialized directly in coordinate mode.")
+             logger.info(f"Agno team initialized directly in coordinate mode using provider: {selected_provider}.")
         except Exception as e:
              logger.critical(f"Failed to initialize Agno team: {e}", exc_info=True)
              sys.exit(1)
@@ -759,27 +818,37 @@ def run():
         logger.info("Shutting down application resources...")
         app_context = None # Clean up context if initialized directly
 
-if __name__ == "__main__":
-    # Check necessary environment variables
-    if "DEEPSEEK_API_KEY" not in os.environ:
-        logger.warning("DEEPSEEK_API_KEY environment variable not found. Model initialization might fail.")
+def check_environment_variables():
+    """Checks for necessary environment variables based on the selected provider."""
+    provider = os.environ.get("LLM_PROVIDER", "deepseek").lower()
+    api_key_var = ""
+    base_url_var = "" # Some providers might not strictly need a base URL override
 
-    # Check EXA_API_KEY only if ExaTools are actually used by any member agent
+    if provider == "deepseek":
+        api_key_var = "DEEPSEEK_API_KEY"
+    elif provider == "groq":
+        api_key_var = "GROQ_API_KEY"
+    elif provider == "openrouter":
+        api_key_var = "OPENROUTER_API_KEY"
+    if api_key_var and api_key_var not in os.environ:
+        logger.warning(f"{api_key_var} environment variable not found. Model initialization for '{provider}' might fail.")
     try:
-        team_for_check = create_sequential_thinking_team() # Create temporarily to check tools
-        uses_exa = False
-        # Iterate through members to check for ExaTools
-        for member in team_for_check.members:
-            if hasattr(member, 'tools') and member.tools:
-                 if any(isinstance(t, ExaTools) for t in member.tools):
-                     uses_exa = True
-                     break # Found it, no need to check further
+        ModelClass, _, _ = get_model_config() # Just need the class for dummy init
+        dummy_model = ModelClass(id="dummy-check") # Use a placeholder ID
+        researcher_for_check = Agent(name="CheckAgent", tools=[ExaTools()], model=dummy_model)
+        uses_exa = any(isinstance(t, ExaTools) for t in researcher_for_check.tools)
 
         if uses_exa and "EXA_API_KEY" not in os.environ:
              logger.warning("EXA_API_KEY environment variable not found, but ExaTools are configured in a team member. Researcher agent might fail.")
+    except Exception as e:
+        logger.error(f"Could not perform ExaTools check due to an error: {e}")
 
-        # Run the application
+
+if __name__ == "__main__":
+    check_environment_variables()
+    try:
         run()
     except Exception as e:
-        logger.critical(f"Failed during initial setup or checks: {e}", exc_info=True)
+        logger.critical(f"Failed during server run: {e}", exc_info=True)
         sys.exit(1)
+        

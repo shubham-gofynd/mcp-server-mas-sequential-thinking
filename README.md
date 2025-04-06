@@ -62,8 +62,11 @@ This parallel processing leads to substantially higher token usage (potentially 
 ## Prerequisites
 
 * Python 3.10+
-* Access to a compatible LLM API (configured for `agno`, e.g., DeepSeek)
-    * `DEEPSEEK_API_KEY` environment variable.
+* Access to a compatible LLM API (configured for `agno`). The system now supports:
+    * **Groq:** Requires `GROQ_API_KEY`.
+    * **DeepSeek:** Requires `DEEPSEEK_API_KEY`.
+    * **OpenRouter:** Requires `OPENROUTER_API_KEY`.
+    * Configure the desired provider using the `LLM_PROVIDER` environment variable (defaults to `deepseek`).
 * Exa API Key (if using the Researcher agent's capabilities)
     * `EXA_API_KEY` environment variable.
 * `uv` package manager (recommended) or `pip`.
@@ -72,22 +75,27 @@ This parallel processing leads to substantially higher token usage (potentially 
 
 This server runs as a standard executable script that communicates via stdio, as expected by MCP. The exact configuration method depends on your specific MCP client implementation. Consult your client's documentation for details.
 
-```
+The `env` section should include the API key for your chosen `LLM_PROVIDER`.
+
+```json
 {
   "mcpServers": {
       "mas-sequential-thinking": {
          "command": "uvx",
          "args": [
-            "path/to/mcp-server-mas-sequential-thinking"
+            "mcp-server-mas-sequential-thinking"
          ],
-         env": {
-            "DEEPSEEK_API_KEY": "your_deepseek_api_key",
-            "DEEPSEEK_BASE_URL": "your_base_url_if_needed", # Optional: If using a custom endpoint
-            "EXA_API_KEY": "your_exa_api_key"
+         "env": {
+            "LLM_PROVIDER": "deepseek", // Or "groq", "openrouter"
+            // "GROQ_API_KEY": "your_groq_api_key", // Only if LLM_PROVIDER="groq"
+            "DEEPSEEK_API_KEY": "your_deepseek_api_key", // Default provider
+            // "OPENROUTER_API_KEY": "your_openrouter_api_key", // Only if LLM_PROVIDER="openrouter"
+            "DEEPSEEK_BASE_URL": "your_base_url_if_needed", // Optional: If using a custom endpoint for DeepSeek
+            "EXA_API_KEY": "your_exa_api_key" // Only if using Exa
          }
       }
    }
-}  
+}
 ```
 
 ## Installation & Setup
@@ -101,10 +109,31 @@ This server runs as a standard executable script that communicates via stdio, as
 2.  **Set Environment Variables:**
     Create a `.env` file in the root directory or export the variables:
     ```dotenv
-    # Required for the LLM used by Agno agents/team
-    DEEPSEEK_API_KEY="your_deepseek_api_key"
-    # DEEPSEEK_BASE_URL="your_base_url_if_needed" # Optional: If using a custom endpoint
+    # --- LLM Configuration ---
+    # Select the LLM provider: "deepseek" (default), "groq", or "openrouter"
+    LLM_PROVIDER="deepseek"
 
+    # Provide the API key for the chosen provider:
+    # GROQ_API_KEY="your_groq_api_key"
+    DEEPSEEK_API_KEY="your_deepseek_api_key"
+    # OPENROUTER_API_KEY="your_openrouter_api_key"
+
+    # Optional: Base URL override (e.g., for custom DeepSeek endpoints)
+    DEEPSEEK_BASE_URL="your_base_url_if_needed"
+
+    # Optional: Specify different models for Team Coordinator and Specialist Agents
+    # Defaults are set within the code based on the provider if these are not set.
+    # Example for Groq:
+    # GROQ_TEAM_MODEL_ID="llama3-70b-8192"
+    # GROQ_AGENT_MODEL_ID="llama3-8b-8192"
+    # Example for DeepSeek:
+    # DEEPSEEK_TEAM_MODEL_ID="deepseek-chat"
+    # DEEPSEEK_AGENT_MODEL_ID="deepseek-coder"
+    # Example for OpenRouter:
+    # OPENROUTER_TEAM_MODEL_ID="anthropic/claude-3-haiku-20240307"
+    # OPENROUTER_AGENT_MODEL_ID="google/gemini-flash-1.5"
+
+    # --- External Tools ---
     # Required ONLY if the Researcher agent is used and needs Exa
     EXA_API_KEY="your_exa_api_key"
     ```

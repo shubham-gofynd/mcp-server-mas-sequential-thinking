@@ -63,8 +63,11 @@
 ## 先决条件
 
   * Python 3.10+
-  * 访问兼容的 LLM API（为 `agno` 配置，例如 DeepSeek）
-      * `DEEPSEEK_API_KEY` 环境变量。
+  * 访问兼容的 LLM API（为 `agno` 配置）。系统现在支持：
+      * **Groq:** 需要 `GROQ_API_KEY`。
+      * **DeepSeek:** 需要 `DEEPSEEK_API_KEY`。
+      * **OpenRouter:** 需要 `OPENROUTER_API_KEY`。
+      * 使用 `LLM_PROVIDER` 环境变量配置所需的提供商（默认为 `deepseek`）。
   * Exa API 密钥（如果使用研究员智能体的功能）
       * `EXA_API_KEY` 环境变量。
   * `uv` 包管理器（推荐）或 `pip`。
@@ -73,18 +76,23 @@
 
 此服务器作为标准可执行脚本运行，通过 stdio 进行通信，符合 MCP 的预期。确切的配置方法取决于您具体的 MCP 客户端实现。请查阅您客户端的文档以获取详细信息。
 
+`env` 部分应包含您选择的 `LLM_PROVIDER` 对应的 API 密钥。
+
 ```json
 {
   "mcpServers": {
       "mas-sequential-thinking": {
       "command": "uvx",
       "args": [
-        "path/to/mcp-server-mas-sequential-thinking"
+        "mcp-server-mas-sequential-thinking"
       ],
       "env": {
-        "DEEPSEEK_API_KEY": "你的_deepseek_api_密钥",
-        "DEEPSEEK_BASE_URL": "你的_base_url_如果需要", // 可选：如果使用自定义端点
-        "EXA_API_KEY": "你的_exa_api_密钥"
+        "LLM_PROVIDER": "deepseek", // 或 "groq", "openrouter"
+        // "GROQ_API_KEY": "你的_groq_api_密钥", // 仅当 LLM_PROVIDER="groq" 时需要
+        "DEEPSEEK_API_KEY": "你的_deepseek_api_密钥", // 默认提供商
+        // "OPENROUTER_API_KEY": "你的_openrouter_api_密钥", // 仅当 LLM_PROVIDER="openrouter" 时需要
+        "DEEPSEEK_BASE_URL": "你的_base_url_如果需要", // 可选：如果为 DeepSeek 使用自定义端点
+        "EXA_API_KEY": "你的_exa_api_密钥" // 仅当使用 Exa 时需要
       }
     }
   }
@@ -104,10 +112,31 @@
     在根目录创建一个 `.env` 文件或导出变量：
 
     ```dotenv
-    # Agno 智能体/团队使用的 LLM 所必需
-    DEEPSEEK_API_KEY="你的_deepseek_api_密钥"
-    # DEEPSEEK_BASE_URL="你的_base_url_如果需要" # 可选：如果使用自定义端点
+    # --- LLM 配置 ---
+    # 选择 LLM 提供商: "deepseek" (默认), "groq", 或 "openrouter"
+    LLM_PROVIDER="deepseek"
 
+    # 提供所选提供商的 API 密钥:
+    # GROQ_API_KEY="你的_groq_api_密钥"
+    DEEPSEEK_API_KEY="你的_deepseek_api_密钥"
+    # OPENROUTER_API_KEY="你的_openrouter_api_密钥"
+
+    # 可选: 基础 URL 覆盖 (例如, 用于自定义 DeepSeek 端点)
+    DEEPSEEK_BASE_URL="你的_base_url_如果需要"
+
+    # 可选: 为团队协调器和专家智能体指定不同的模型
+    # 如果未设置这些变量，则代码会根据提供商设置默认值。
+    # Groq 示例:
+    # GROQ_TEAM_MODEL_ID="llama3-70b-8192"
+    # GROQ_AGENT_MODEL_ID="llama3-8b-8192"
+    # DeepSeek 示例:
+    # DEEPSEEK_TEAM_MODEL_ID="deepseek-chat"
+    # DEEPSEEK_AGENT_MODEL_ID="deepseek-coder"
+    # OpenRouter 示例:
+    # OPENROUTER_TEAM_MODEL_ID="anthropic/claude-3-haiku-20240307"
+    # OPENROUTER_AGENT_MODEL_ID="google/gemini-flash-1.5"
+
+    # --- 外部工具 ---
     # 仅当研究员智能体被使用且需要 Exa 时才必需
     EXA_API_KEY="你的_exa_api_密钥"
     ```
@@ -165,64 +194,8 @@ python 你的主脚本名称.py
 LLM 会迭代地与此工具交互：
 
 1.  **LLM:** 使用 `sequential-thinking-starter` 提示和问题。
-2.  **LLM:** 使用 `thoughtNumber: 1`、初始 `thought`（例如，“规划分析...”）、`totalThoughts` 预估、`nextThoughtNeeded: True` 调用 `sequentialthinking` 工具。
-3.  **服务器:** MAS 处理思考 -\> 协调器综合响应并提供指导（例如，“分析计划完成。建议下一步研究 X。暂不推荐修订。”）。
+2.  **LLM:** 使用 `thoughtNumber: 1`、初始 `thought`（例如，"规划分析..."）、`totalThoughts` 预估、`nextThoughtNeeded: True` 调用 `sequentialthinking` 工具。
+3.  **服务器:** MAS 处理思考 -\> 协调器综合响应并提供指导（例如，"分析计划完成。建议下一步研究 X。暂不推荐修订。"）。
 4.  **LLM:** 接收包含 `coordinatorResponse` 的 JSON 响应。
-5.  **LLM:** 根据 `coordinatorResponse` 构思下一个思考（例如，“使用 Exa 研究 X...”）。
-6.  **LLM:** 使用 `thoughtNumber: 2`、新的 `thought`、更新的 `totalThoughts`（如果需要）、`nextThoughtNeeded: True` 调用 `sequentialthinking` 工具。
-7.  **服务器:** MAS 处理 -\> 协调器综合（例如，“研究完成。发现表明思考 \#1 的假设存在缺陷。建议：修订思考 \#1...”）。
-8.  **LLM:** 接收响应，看到建议。
-9.  **LLM:** 构思一个修订思考。
-10. **LLM:** 使用 `thoughtNumber: 3`、修订后的 `thought`、`isRevision: True`、`revisesThought: 1`、`nextThoughtNeeded: True` 调用 `sequentialthinking` 工具。
-11. **... 以此类推，可能根据需要进行分支或扩展。**
-
-### 工具响应格式
-
-该工具返回一个 JSON 字符串，包含：
-
-```json
-{
-  "processedThoughtNumber": int,          // 处理的思考编号
-  "estimatedTotalThoughts": int,          // 预估总思考数
-  "nextThoughtNeeded": bool,              // 是否需要下一个思考
-  "coordinatorResponse": "来自智能体团队的综合输出，包括分析、发现和下一步指导...", // 协调器的综合响应
-  "branches": ["分支ID列表"],              // 所有分支 ID 的列表
-  "thoughtHistoryLength": int,           // 思考历史长度
-  "branchDetails": {                      // 分支详情
-    "currentBranchId": "main | branchId", // 当前分支 ID
-    "branchOriginThought": null | int,     // 分支起源的思考编号
-    "allBranches": {"main": 数量, "branchId": 数量, ...} // 所有分支及其包含的思考数
-  },
-  "isRevision": bool,                     // 是否为修订
-  "revisesThought": null | int,           // 修订的思考编号
-  "isBranch": bool,                       // 是否为分支操作产生的思考
-  "status": "success | validation_error | failed", // 状态
-  "error": "如果状态不是 success 时的错误信息" // 可选
-}
-```
-
-## 日志记录
-
-  * 日志写入 `~/.sequential_thinking/logs/sequential_thinking.log`。
-  * 使用 Python 标准的 `logging` 模块。
-  * 包含轮转文件处理器（10MB 限制，5 个备份）和控制台处理器（INFO 级别）。
-  * 日志包含时间戳、级别、记录器名称和消息，包括格式化的思考表示。
-
-## 开发
-
-（如果适用，在此处添加开发指南，例如设置开发环境、运行测试、代码检查等。）
-
-1.  克隆仓库。
-2.  设置虚拟环境。
-3.  安装依赖项，可能包括开发附加项：
-    ```bash
-    # 使用 uv
-    uv pip install -e ".[dev]"
-    # 使用 pip
-    pip install -e ".[dev]"
-    ```
-4.  运行代码检查器/格式化器/测试。
-
-## 许可证
-
-MIT
+5.  **LLM:** 根据 `coordinatorResponse` 构思下一个思考（例如，"使用 Exa 研究 X..."）。
+6.  **LLM:** 使用 `thoughtNumber: 2`、新的 `thought`、更新的 `totalThoughts`（如果需要）、`
