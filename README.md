@@ -127,8 +127,8 @@ The `env` section should include the API key for your chosen `LLM_PROVIDER`.
     # GROQ_TEAM_MODEL_ID="llama3-70b-8192"
     # GROQ_AGENT_MODEL_ID="llama3-8b-8192"
     # Example for DeepSeek:
-    # DEEPSEEK_TEAM_MODEL_ID="deepseek-chat"
-    # DEEPSEEK_AGENT_MODEL_ID="deepseek-coder"
+    # DEEPSEEK_TEAM_MODEL_ID="deepseek-reasoner" # Recommended for coordination
+    # DEEPSEEK_AGENT_MODEL_ID="deepseek-chat"     # Recommended for specialists
     # Example for OpenRouter:
     # OPENROUTER_TEAM_MODEL_ID="anthropic/claude-3-haiku-20240307"
     # OPENROUTER_AGENT_MODEL_ID="google/gemini-flash-1.5"
@@ -137,6 +137,12 @@ The `env` section should include the API key for your chosen `LLM_PROVIDER`.
     # Required ONLY if the Researcher agent is used and needs Exa
     EXA_API_KEY="your_exa_api_key"
     ```
+
+    **Note on Model Selection:**
+
+    *   The `TEAM_MODEL_ID` is used by the Coordinator (the `Team` object itself). This role requires strong reasoning, synthesis, and delegation capabilities. Using a more powerful model (like `deepseek-reasoner`, `claude-3-opus`, or `gpt-4-turbo`) is often beneficial here, even if it's slower or more expensive.
+    *   The `AGENT_MODEL_ID` is used by the specialist agents (Planner, Researcher, etc.). These agents handle more focused sub-tasks. You might choose a faster or more cost-effective model (like `deepseek-chat`, `claude-3-sonnet`, `llama3-70b`) for specialists, depending on the complexity of the tasks they typically handle and your budget/performance requirements.
+    *   The defaults provided in `main.py` (e.g., `deepseek-reasoner` for agents when using DeepSeek) are starting points. Experimentation is encouraged to find the optimal balance for your specific use case.
 
 3.  **Install Dependencies:**
 
