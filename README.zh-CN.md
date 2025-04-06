@@ -79,7 +79,7 @@
       "mas-sequential-thinking": {
       "command": "uvx",
       "args": [
-        "mcp-server-mas-sequential-thinking"
+        "path/to/mcp-server-mas-sequential-thinking"
       ],
       "env": {
         "DEEPSEEK_API_KEY": "你的_deepseek_api_密钥",

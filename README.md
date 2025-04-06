@@ -78,7 +78,7 @@ This server runs as a standard executable script that communicates via stdio, as
       "mas-sequential-thinking": {
          "command": "uvx",
          "args": [
-            "mcp-server-mas-sequential-thinking"
+            "path/to/mcp-server-mas-sequential-thinking"
          ],
          env": {
             "DEEPSEEK_API_KEY": "your_deepseek_api_key",
