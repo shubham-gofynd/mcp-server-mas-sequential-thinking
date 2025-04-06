@@ -308,17 +308,17 @@ def get_model_config() -> tuple[Type[Model], str, str]:
         ModelClass = DeepSeek
         # Use environment variables for DeepSeek model IDs if set, otherwise use defaults
         team_model_id = os.environ.get("DEEPSEEK_TEAM_MODEL_ID", "deepseek-chat")
-        agent_model_id = os.environ.get("DEEPSEEK_AGENT_MODEL_ID", "deepseek-chat")
+        agent_model_id = os.environ.get("DEEPSEEK_AGENT_MODEL_ID", "deepseek-reasoner")
         logger.info(f"Using DeepSeek: Team Model='{team_model_id}', Agent Model='{agent_model_id}'")
     elif provider == "groq":
         ModelClass = Groq
         team_model_id = os.environ.get("GROQ_TEAM_MODEL_ID", "deepseek-r1-distill-llama-70b")
-        agent_model_id = os.environ.get("GROQ_AGENT_MODEL_ID", "deepseek-r1-distill-llama-70b")
+        agent_model_id = os.environ.get("GROQ_AGENT_MODEL_ID", "qwen-2.5-32b")
         logger.info(f"Using Groq: Team Model='{team_model_id}', Agent Model='{agent_model_id}'")
     elif provider == "openrouter":
         ModelClass = OpenRouter
         team_model_id = os.environ.get("OPENROUTER_TEAM_MODEL_ID", "deepseek/deepseek-chat-v3-0324")
-        agent_model_id = os.environ.get("OPENROUTER_AGENT_MODEL_ID", "deepseek/deepseek-chat-v3-0324")
+        agent_model_id = os.environ.get("OPENROUTER_AGENT_MODEL_ID", "deepseek/deepseek-r1")
         logger.info(f"Using OpenRouter: Team Model='{team_model_id}', Agent Model='{agent_model_id}'")
     else:
         logger.error(f"Unsupported LLM_PROVIDER: {provider}. Defaulting to DeepSeek.")
@@ -654,7 +654,7 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
              return json.dumps({
                  "error": "Critical Error: Application context not available and re-initialization failed.",
                  "status": "critical_failure"
-             }, indent=2)
+             }, indent=2, ensure_ascii=False)
              # Or raise Exception("Critical Error: Application context not available.")
 
     MIN_TOTAL_THOUGHTS = 5 # Keep a minimum suggestion
@@ -768,7 +768,7 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
             "status": "success"
         }
 
-        return json.dumps(result_data, indent=2)
+        return json.dumps(result_data, indent=2, ensure_ascii=False)
 
     except ValidationError as e:
         logger.error(f"Validation Error processing tool call: {e}")
@@ -776,13 +776,13 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
         return json.dumps({
             "error": f"Input validation failed: {e}",
             "status": "validation_error"
-        }, indent=2)
+        }, indent=2, ensure_ascii=False)
     except Exception as e:
         logger.exception(f"Error processing tool call") # Log full traceback
         return json.dumps({
             "error": f"An unexpected error occurred: {str(e)}",
             "status": "failed"
-        }, indent=2)
+        }, indent=2, ensure_ascii=False)
 
 # --- Main Execution ---
 
