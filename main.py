@@ -308,7 +308,7 @@ def get_model_config() -> tuple[Type[Model], str, str]:
         ModelClass = DeepSeek
         # Use environment variables for DeepSeek model IDs if set, otherwise use defaults
         team_model_id = os.environ.get("DEEPSEEK_TEAM_MODEL_ID", "deepseek-chat")
-        agent_model_id = os.environ.get("DEEPSEEK_AGENT_MODEL_ID", "deepseek-reasoner")
+        agent_model_id = os.environ.get("DEEPSEEK_AGENT_MODEL_ID", "deepseek-chat")
         logger.info(f"Using DeepSeek: Team Model='{team_model_id}', Agent Model='{agent_model_id}'")
     elif provider == "groq":
         ModelClass = Groq
