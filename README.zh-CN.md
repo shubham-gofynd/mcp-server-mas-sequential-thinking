@@ -130,11 +130,11 @@
     # GROQ_TEAM_MODEL_ID="llama3-70b-8192"
     # GROQ_AGENT_MODEL_ID="llama3-8b-8192"
     # DeepSeek 示例:
-    # DEEPSEEK_TEAM_MODEL_ID="deepseek-reasoner" # 推荐用于协调
-    # DEEPSEEK_AGENT_MODEL_ID="deepseek-chat"     # 推荐用于专家智能体
+    # DEEPSEEK_TEAM_MODEL_ID="deepseek-chat"  # 注意：不推荐使用 `deepseek-reasoner`，因为它不支持函数调用
+    # DEEPSEEK_AGENT_MODEL_ID="deepseek-chat"  # 推荐用于专家智能体
     # OpenRouter 示例:
-    # OPENROUTER_TEAM_MODEL_ID="anthropic/claude-3-haiku-20240307"
-    # OPENROUTER_AGENT_MODEL_ID="google/gemini-flash-1.5"
+    # OPENROUTER_TEAM_MODEL_ID="deepseek/deepseek-r1"
+    # OPENROUTER_AGENT_MODEL_ID="deepseek/deepseek-chat-v3-0324"
 
     # --- 外部工具 ---
     # 仅当研究员智能体被使用且需要 Exa 时才必需
@@ -143,9 +143,9 @@
 
     **关于模型选择的说明:**
 
-    *   `TEAM_MODEL_ID` 由协调器（`Team` 对象本身）使用。该角色需要强大的推理、综合和委派能力。在此处使用更强大的模型（如 `deepseek-reasoner`、`claude-3-opus` 或 `gpt-4-turbo`）通常更有益，即使它可能更慢或更昂贵。
-    *   `AGENT_MODEL_ID` 由专家智能体（规划器、研究员等）使用。这些智能体处理更集中的子任务。您可以为专家选择更快或更具成本效益的模型（如 `deepseek-chat`、`claude-3-sonnet`、`llama3-70b`），具体取决于它们通常处理的任务复杂性以及您的预算/性能要求。
-    *   `main.py` 中提供的默认值（例如，使用 DeepSeek 时，智能体默认为 `deepseek-reasoner`）是起点。鼓励进行实验，以找到适合您特定用例的最佳平衡点。
+    *   `TEAM_MODEL_ID` 由协调器（`Team` 对象本身）使用。该角色需要强大的推理、综合和委派能力。使用更强大的模型（如 `deepseek-r1`、`claude-3-opus` 或 `gpt-4-turbo`）通常更有益，即使它可能更慢或更昂贵。
+    *   `AGENT_MODEL_ID` 由专家智能体（规划器、研究员等）使用。这些智能体处理更集中的子任务。您可以为专家选择更快或更具成本效益的模型（如 `deepseek-v3`、`claude-3-sonnet`、`llama3-70b`），具体取决于它们通常处理的任务复杂性以及您的预算/性能要求。
+    *   `main.py` 中提供的默认值（例如，使用 DeepSeek 时的 `deepseek-chat`）是起点。鼓励进行实验，以找到适合您特定用例的最佳平衡点。
 
 3.  **安装依赖：**
 
