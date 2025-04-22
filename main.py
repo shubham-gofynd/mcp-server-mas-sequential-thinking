@@ -625,26 +625,60 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
                       branchFromThought: Optional[int] = None, branchId: Optional[str] = None,
                       needsMoreThoughts: bool = False) -> str:
     """
-    Processes one step in a sequential thinking chain using the Agno team in coordinate mode.
+    A detailed tool for dynamic and reflective problem-solving through thoughts.
 
-    The Coordinator agent within the team receives the thought, breaks it down,
-    delegates to specialists (Planner, Researcher, Analyzer, Critic, Synthesizer),
-    and synthesizes their outputs into a final response. The Coordinator's response
-    may include suggestions for revision or branching.
+    This tool helps analyze problems through a flexible thinking process that can adapt and evolve.
+    Each thought can build on, question, or revise previous insights as understanding deepens.
+    It uses an Agno multi-agent team (in coordinate mode) to process each thought, where a
+    Coordinator delegates sub-tasks to specialists (Planner, Researcher, Analyzer, Critic, Synthesizer)
+    and synthesizes their outputs.
+
+    When to use this tool:
+    - Breaking down complex problems into manageable steps.
+    - Planning and design processes requiring iterative refinement and revision.
+    - Complex analysis where the approach might need course correction based on findings.
+    - Problems where the full scope or optimal path is not clear initially.
+    - Situations requiring a multi-step solution with context maintained across steps.
+    - Tasks where focusing on relevant information and filtering out noise is crucial.
+    - Developing and verifying solution hypotheses through a chain of reasoning.
+
+    Key features & usage guidelines:
+    - The process is driven by the caller (e.g., an LLM) making sequential calls to this tool.
+    - Start with an initial estimate for `totalThoughts`, but adjust it dynamically via subsequent calls if needed.
+    - Use `isRevision=True` and `revisesThought` to explicitly revisit and correct previous steps.
+    - Use `branchFromThought` and `branchId` to explore alternative paths or perspectives.
+    - If the estimated `totalThoughts` is reached but more steps are needed, set `needsMoreThoughts=True` on the *last* thought within the current estimate to signal the need for extension.
+    - Express uncertainty and explore alternatives within the `thought` content.
+    - Generate solution hypotheses within the `thought` content when appropriate.
+    - Verify hypotheses in subsequent `thought` steps based on the reasoning chain.
+    - The caller should repeat the process, calling this tool for each step, until a satisfactory solution is reached.
+    - Set `nextThoughtNeeded=False` only when the caller determines the process is complete and a final answer is ready.
 
     Parameters:
-        thought (str): The current thinking step.
-        thoughtNumber (int): Current sequence number (≥1)
-        totalThoughts (int): Estimated total thoughts needed (≥5 suggested)
-        nextThoughtNeeded (bool): Whether another thought step is needed
-        isRevision (bool, optional): Whether this revises previous thinking
-        revisesThought (int, optional): Which thought is being reconsidered
-        branchFromThought (int, optional): If branching, which thought number is the branch point
-        branchId (str, optional): Branch identifier
-        needsMoreThoughts (bool, optional): If more thoughts are needed beyond current estimate
+        thought (str): The content of the current thinking step. This can be an analytical step,
+                       a plan, a question, a critique, a revision, a hypothesis, or verification.
+                       Make it specific enough to imply the desired action.
+        thoughtNumber (int): The sequence number of this thought (>=1). Can exceed initial `totalThoughts`
+                             if the process is extended.
+        totalThoughts (int): The current *estimate* of the total thoughts required for the process.
+                             This can be adjusted by the caller in subsequent calls. Minimum 5 suggested.
+        nextThoughtNeeded (bool): Indicates if the caller intends to make another call to this tool
+                                  after the current one. Set to False only when the entire process is deemed complete.
+        isRevision (bool, optional): True if this thought revises or corrects a previous thought. Defaults to False.
+        revisesThought (int, optional): The `thoughtNumber` of the thought being revised, required if `isRevision` is True.
+                                        Must be less than the current `thoughtNumber`.
+        branchFromThought (int, optional): The `thoughtNumber` from which this thought branches to explore an alternative path.
+                                           Defaults to None.
+        branchId (str, optional): A unique identifier for the branch being explored, required if `branchFromThought` is set.
+                                  Defaults to None.
+        needsMoreThoughts (bool, optional): Set to True on a thought if the caller anticipates needing more
+                                            steps beyond the current `totalThoughts` estimate *after* this thought.
+                                            Defaults to False.
 
     Returns:
-        str: JSON string containing the Coordinator's synthesized response and status.
+        str: The Coordinator agent's synthesized response based on specialist contributions for the current `thought`.
+             Includes guidance for the caller on potential next steps (e.g., suggestions for revision or branching
+             based on the specialists' analysis). The caller uses this response to formulate the *next* thought.
     """
     global app_context
     if not app_context or not app_context.team:
@@ -658,10 +692,8 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
              logger.info("Successfully re-initialized team and context.")
         except Exception as init_err:
              logger.critical(f"Failed to re-initialize Agno team during tool call: {init_err}", exc_info=True)
-             return json.dumps({
-                 "error": "Critical Error: Application context not available and re-initialization failed.",
-                 "status": "critical_failure"
-             }, indent=2, ensure_ascii=False)
+             # Return only the error message string
+             return f"Critical Error: Application context not available and re-initialization failed: {init_err}"
              # Or raise Exception("Critical Error: Application context not available.")
 
     MIN_TOTAL_THOUGHTS = 5 # Keep a minimum suggestion
@@ -737,7 +769,10 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
         # Call the team's arun method. The coordinator agent will handle it.
         team_response = await app_context.team.arun(input_prompt)
 
-        coordinator_response = team_response.content if hasattr(team_response, 'content') else str(team_response)
+        # Ensure coordinator_response is a string, default to empty string if None
+        coordinator_response_content = team_response.content if hasattr(team_response, 'content') else None
+        coordinator_response = str(coordinator_response_content) if coordinator_response_content is not None else ""
+
         logger.info(f"Coordinator finished processing thought #{thoughtNumber}.")
         logger.debug(f"Coordinator Raw Response:\n{coordinator_response}")
 
@@ -761,7 +796,8 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
             "processedThoughtNumber": current_input_thought.thoughtNumber,
             "estimatedTotalThoughts": current_input_thought.totalThoughts,
             "nextThoughtNeeded": current_input_thought.nextThoughtNeeded,
-            "coordinatorResponse": coordinator_response + additional_guidance, # Coordinator's synthesized response + guidance
+            # Ensure both parts are strings before concatenating
+            "coordinatorResponse": coordinator_response + str(additional_guidance),
             "branches": list(app_context.branches.keys()),
             "thoughtHistoryLength": len(app_context.thought_history),
             "branchDetails": {
@@ -775,21 +811,17 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
             "status": "success"
         }
 
-        return json.dumps(result_data, indent=2, ensure_ascii=False)
+        # Return only the coordinatorResponse string
+        return result_data["coordinatorResponse"]
 
     except ValidationError as e:
         logger.error(f"Validation Error processing tool call: {e}")
-        # Provide detailed validation error back to the caller
-        return json.dumps({
-            "error": f"Input validation failed: {e}",
-            "status": "validation_error"
-        }, indent=2, ensure_ascii=False)
+        # Return only the error message string
+        return f"Input validation failed: {e}"
     except Exception as e:
         logger.exception(f"Error processing tool call") # Log full traceback
-        return json.dumps({
-            "error": f"An unexpected error occurred: {str(e)}",
-            "status": "failed"
-        }, indent=2, ensure_ascii=False)
+        # Return only the error message string
+        return f"An unexpected error occurred: {str(e)}"
 
 # --- Main Execution ---
 
