@@ -573,7 +573,7 @@ mcp = FastMCP()
 
 # --- MCP Handlers ---
 
-@mcp.prompt("sequential-thinking-starter")
+@mcp.prompt("sequential-thinking")
 def sequential_thinking_prompt(problem: str, context: str = ""):
     """
     Starter prompt for sequential thinking that ENCOURAGES non-linear exploration
@@ -608,13 +608,15 @@ Problem: {problem}
 
 Proceed with the first thought based on these guidelines."""
 
-    return {
-        "description": "Starter prompt for non-linear sequential thinking (coordinate mode), providing problem and guidelines separately.",
-        "messages": [
-            {"role": "user", "content": {"type": "text", "text": user_prompt_text}},
-            {"role": "assistant", "content": {"type": "text", "text": assistant_guidelines}}
-        ]
-    }
+    return [
+        {
+            "description": "Starter prompt for non-linear sequential thinking (coordinate mode), providing problem and guidelines separately.",
+            "messages": [
+                {"role": "user", "content": {"type": "text", "text": user_prompt_text}},
+                {"role": "assistant", "content": {"type": "text", "text": assistant_guidelines}}
+            ]
+        }
+    ]
 
 
 @mcp.tool()
