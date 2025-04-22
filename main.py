@@ -603,7 +603,7 @@ Problem: {problem}
 
 **Process:**
 
-*   The `sequentialthinking` tool will track your progress. The Agno team operates in 'coordinate' mode. The Coordinator agent receives your thought, delegates sub-tasks to specialists (like Analyzer, Critic), and synthesizes their results, potentially including recommendations for revision or branching.
+*   The `sequentialthinking` tool will track your progress. The Agno team operates in 'coordinate' mode. The Coordinator agent receives your thought, delegates sub-tasks to specialists (like Analyzer, Critic), and synthesizes their outputs, potentially including recommendations for revision or branching.
 *   Focus on insightful analysis, constructive critique (leading to potential revisions), and creative exploration (leading to potential branching).
 *   Actively reflect on the process. Linear thinking might be insufficient for complex problems.
 
@@ -779,17 +779,16 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
 
 
         # --- Guidance for Next Step (Coordinate Mode) ---
-        additional_guidance = "\n\nGuidance for next step:"
-        next_thought_num = current_input_thought.thoughtNumber + 1
+        additional_guidance = "\n\nGuidance for next step:" # Initialize
 
         if not current_input_thought.nextThoughtNeeded:
-             additional_guidance = "\n\nThis is the final thought based on current estimates or your signal. Review the Coordinator's final synthesis."
+            # Keep the message for the final thought concise
+            additional_guidance = "\n\nThis is the final thought. Review the Coordinator's final synthesis."
         else:
-            additional_guidance += " Review the Coordinator's synthesized response above."
-            additional_guidance += "\n**Revision/Branching:** Did the Coordinator recommend revising a previous thought ('RECOMMENDATION: Revise thought #X...')? If so, use `isRevision=True` and `revisesThought=X` in your next call."
-            additional_guidance += " Did the Coordinator suggest exploring alternatives ('SUGGESTION: Consider branching...')? If so, consider using `branchFromThought=Y` and `branchId='new-branch-Z'`."
-            additional_guidance += "\n**Next Thought:** Based on the Coordinator's output and the overall goal, formulate the next logical thought. Address any specific points raised by the Coordinator."
-            additional_guidance += "\n**ToT Principle:** If the Coordinator highlighted multiple viable paths or unresolved alternatives, consider initiating parallel branches (using distinct `branchId`s originating from the same `branchFromThought`) in subsequent steps to explore them, aiming for later evaluation/synthesis."
+            # Start guidance text for non-final thoughts
+            additional_guidance += "\n- **Revision/Branching:** Look for 'RECOMMENDATION: Revise thought #X...' or 'SUGGESTION: Consider branching...' in the response."
+            additional_guidance += " Use `isRevision=True`/`revisesThought=X` for revisions or `branchFromThought=Y`/`branchId='...'` for branching accordingly."
+            additional_guidance += "\n- **Next Thought:** Based on the Coordinator's response, formulate the next logical thought, addressing any points raised."
 
 
         # --- Build Result ---
