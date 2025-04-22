@@ -465,6 +465,7 @@ def create_sequential_thinking_team() -> Team:
             " 5. Formulate a response presenting the synthesized information or conclusions.",
             " 6. Return your response to the Team Coordinator.",
             "Focus on creating clarity and coherence for the delegated synthesis task.",
+            "**For the final synthesis task provided by the Coordinator:** Aim for a concise and high-level integration. Focus on the core synthesized understanding and key takeaways, rather than detailing the step-by-step process or extensive analysis of each component.",
         ],
         model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
