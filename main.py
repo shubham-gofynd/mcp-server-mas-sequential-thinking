@@ -574,17 +574,19 @@ mcp = FastMCP()
 # --- MCP Handlers ---
 
 @mcp.prompt("sequential-thinking-starter")
-def sequential_thinking_starter(problem: str, context: str = ""):
+def sequential_thinking_prompt(problem: str, context: str = ""):
     """
     Starter prompt for sequential thinking that ENCOURAGES non-linear exploration
-    using coordinate mode.
+    using coordinate mode. Returns separate user and assistant messages.
     """
     min_thoughts = 5 # Set a reasonable minimum number of initial thoughts
 
-    prompt_text = f"""Initiate a comprehensive sequential thinking process for the following problem:
+    user_prompt_text = f"""Initiate a comprehensive sequential thinking process for the following problem:
 
 Problem: {problem}
-{f'Context: {context}' if context else ''}
+{f'Context: {context}' if context else ''}"""
+
+    assistant_guidelines = f"""Okay, let's start the sequential thinking process. Here are the guidelines and the process we'll follow using the 'coordinate' mode team:
 
 **Sequential Thinking Goals & Guidelines (Coordinate Mode):**
 
@@ -602,15 +604,18 @@ Problem: {problem}
 
 *   The `sequentialthinking` tool will track your progress. The Agno team operates in 'coordinate' mode. The Coordinator agent receives your thought, delegates sub-tasks to specialists (like Analyzer, Critic), and synthesizes their results, potentially including recommendations for revision or branching.
 *   Focus on insightful analysis, constructive critique (leading to potential revisions), and creative exploration (leading to potential branching).
-*   Actively reflect on the process. Linear thinking might be insufficient for complex problems. Proceed with the first thought."""
+*   Actively reflect on the process. Linear thinking might be insufficient for complex problems.
+
+Proceed with the first thought based on these guidelines."""
 
     return {
-        "description": "Mandatory non-linear sequential thinking starter prompt (coordinate mode)",
-        "messages": [{"role": "user", "content": {"type": "text", "text": prompt_text}}]
+        "description": "Starter prompt for non-linear sequential thinking (coordinate mode), providing problem and guidelines separately.",
+        "messages": [
+            {"role": "user", "content": {"type": "text", "text": user_prompt_text}},
+            {"role": "assistant", "content": {"type": "text", "text": assistant_guidelines}}
+        ]
     }
 
-# Removed process_agent_tasks function as it's not needed for coordinate mode.
-# The Team's coordinator handles delegation internally.
 
 @mcp.tool()
 async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: int, nextThoughtNeeded: bool,
