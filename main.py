@@ -357,7 +357,6 @@ def create_sequential_thinking_team() -> Team:
         description="Develops strategic plans and roadmaps based on delegated sub-tasks.",
         tools=[ThinkingTools()],
         instructions=[
-            f"Current date and time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             "You are the Strategic Planner specialist.",
             "You will receive specific sub-tasks from the Team Coordinator related to planning, strategy, or process design.",
             "**When you receive a sub-task:**",
@@ -381,7 +380,6 @@ def create_sequential_thinking_team() -> Team:
         description="Gathers and validates information based on delegated research sub-tasks.",
         tools=[ThinkingTools(), ExaTools()],
         instructions=[
-            f"Current date and time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             "You are the Information Gatherer specialist.",
             "You will receive specific sub-tasks from the Team Coordinator requiring information gathering or verification.",
             "**When you receive a sub-task:**",
@@ -405,7 +403,6 @@ def create_sequential_thinking_team() -> Team:
         description="Performs analysis based on delegated analytical sub-tasks.",
         tools=[ThinkingTools()],
         instructions=[
-            f"Current date and time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             "You are the Core Analyst specialist.",
             "You will receive specific sub-tasks from the Team Coordinator requiring analysis, pattern identification, or logical evaluation.",
             "**When you receive a sub-task:**",
@@ -429,7 +426,6 @@ def create_sequential_thinking_team() -> Team:
         description="Critically evaluates ideas or assumptions based on delegated critique sub-tasks.",
         tools=[ThinkingTools()],
         instructions=[
-            f"Current date and time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             "You are the Quality Controller specialist.",
             "You will receive specific sub-tasks from the Team Coordinator requiring critique, evaluation of assumptions, or identification of flaws.",
             "**When you receive a sub-task:**",
@@ -454,7 +450,6 @@ def create_sequential_thinking_team() -> Team:
         description="Integrates information or forms conclusions based on delegated synthesis sub-tasks.",
         tools=[ThinkingTools()],
         instructions=[
-            f"Current date and time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             "You are the Integration Specialist.",
             "You will receive specific sub-tasks from the Team Coordinator requiring integration of information, synthesis of ideas, or formation of conclusions.",
             "**When you receive a sub-task:**",
@@ -481,7 +476,6 @@ def create_sequential_thinking_team() -> Team:
         model=team_model_instance, # Model for the Team's coordination logic
         description="You are the Coordinator of a specialist team processing sequential thoughts. Your role is to manage the flow, delegate tasks, and synthesize results.",
         instructions=[
-            f"Current date and time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             "You are the Coordinator managing a team of specialists (Planner, Researcher, Analyzer, Critic, Synthesizer) in 'coordinate' mode.",
             "Your core responsibilities when receiving an input thought:",
             " 1. Analyze the input thought, considering its type (e.g., initial planning, analysis, revision, branch).",
@@ -513,7 +507,8 @@ def create_sequential_thinking_team() -> Team:
         enable_agentic_context=False, # Allows context sharing managed by the Team (coordinator)
         share_member_interactions=False, # Allows members' interactions to be shared
         markdown=True,
-        debug_mode=False
+        debug_mode=False,
+        add_datetime_to_instructions=True
     )
 
     return team
