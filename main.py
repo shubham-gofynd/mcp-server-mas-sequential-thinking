@@ -190,103 +190,31 @@ class ThoughtData(BaseModel):
 # --- Utility for Formatting Thoughts (for Logging) ---
 
 def format_thought_for_log(thought_data: ThoughtData) -> str:
-    """Formats a thought for logging purposes, handling multi-byte characters."""
+    """Formats a thought for simpler logging purposes."""
     prefix = ''
     context = ''
-    branch_info_log = '' # Added for explicit branch tracking in log
+    branch_info_log = ''
 
     if thought_data.isRevision and thought_data.revisesThought is not None:
-        prefix = '🔄 Revision'
+        prefix = 'Revision'
         context = f' (revising thought {thought_data.revisesThought})'
     elif thought_data.branchFromThought is not None and thought_data.branchId is not None:
-        prefix = '🌿 Branch'
+        prefix = 'Branch'
         context = f' (from thought {thought_data.branchFromThought}, ID: {thought_data.branchId})'
-        # Add visual indication of the branch path in the log
-        # This requires accessing the history, let's assume app_context is accessible or passed
-        # For simplicity here, we just note it's a branch. More complex viz needs context access.
-        branch_info_log = f"Branch Details: ID='{thought_data.branchId}', originates from Thought #{thought_data.branchFromThought}"
+        branch_info_log = f"  Branch Details: ID='{thought_data.branchId}', originates from Thought #{thought_data.branchFromThought}"
     else:
-        prefix = '💭 Thought'
+        prefix = 'Thought'
         context = ''
 
     header = f"{prefix} {thought_data.thoughtNumber}/{thought_data.totalThoughts}{context}"
 
-    # Helper to get visual width of a string (approximates multi-byte characters)
-    def get_visual_width(s: str) -> int:
-        width = 0
-        for char in s:
-            # Basic approximation: Wide characters (e.g., CJK) take 2 cells, others 1
-            if 0x1100 <= ord(char) <= 0x115F or \
-               0x2329 <= ord(char) <= 0x232A or \
-               0x2E80 <= ord(char) <= 0x3247 or \
-               0x3250 <= ord(char) <= 0x4DBF or \
-               0x4E00 <= ord(char) <= 0xA4C6 or \
-               0xA960 <= ord(char) <= 0xA97C or \
-               0xAC00 <= ord(char) <= 0xD7A3 or \
-               0xF900 <= ord(char) <= 0xFAFF or \
-               0xFE10 <= ord(char) <= 0xFE19 or \
-               0xFE30 <= ord(char) <= 0xFE6F or \
-               0xFF00 <= ord(char) <= 0xFF60 or \
-               0xFFE0 <= ord(char) <= 0xFFE6 or \
-               0x1B000 <= ord(char) <= 0x1B001 or \
-               0x1F200 <= ord(char) <= 0x1F251 or \
-               0x1F300 <= ord(char) <= 0x1F64F or \
-               0x1F680 <= ord(char) <= 0x1F6FF:
-                width += 2
-            else:
-                width += 1
-        return width
-
-    header_width = get_visual_width(header)
-    thought_width = get_visual_width(thought_data.thought)
-    max_inner_width = max(header_width, thought_width)
-    border_len = max_inner_width + 4 # Accounts for '│ ' and ' │'
-
-    border = '─' * (border_len - 2) # Border width between corners
-
-    # Wrap thought text correctly based on visual width
-    thought_lines = []
-    current_line = ""
-    current_width = 0
-    words = thought_data.thought.split()
-    for i, word in enumerate(words):
-        word_width = get_visual_width(word)
-        space_width = 1 if current_line else 0
-
-        if current_width + space_width + word_width <= max_inner_width:
-            current_line += (" " if current_line else "") + word
-            current_width += space_width + word_width
-        else:
-            thought_lines.append(current_line)
-            current_line = word
-            current_width = word_width
-
-        # Add the last line if it exists
-        if i == len(words) - 1 and current_line:
-             thought_lines.append(current_line)
-
-
-    # Format lines with padding
-    formatted_header = f"│ {header}{' ' * (max_inner_width - header_width)} │"
-    formatted_thought_lines = [
-        f"│ {line}{' ' * (max_inner_width - get_visual_width(line))} │"
-        for line in thought_lines
-    ]
-
-    # Include branch info in the log box if applicable
-    formatted_branch_info = ''
+    log_entry = f"{header}\n"
+    log_entry += f"  Thought: {thought_data.thought}\n"
     if branch_info_log:
-        branch_info_width = get_visual_width(branch_info_log)
-        padding = ' ' * (max_inner_width - branch_info_width)
-        formatted_branch_info = f"\n│ {branch_info_log}{padding} │\n├{'─' * (border_len - 2)}┤"
+        log_entry += f"{branch_info_log}\n"
+    log_entry += f"  Next Needed: {thought_data.nextThoughtNeeded}, Needs More: {thought_data.needsMoreThoughts}"
 
-    return f"""
-┌{border}┐
-{formatted_header}
-├{border}┤
-{''.join(formatted_thought_lines)}
-{formatted_branch_info} # Insert branch info line here if it exists
-└{border}┘"""
+    return log_entry
 
 
 # --- Agno Multi-Agent Team Setup ---
