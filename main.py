@@ -1,10 +1,8 @@
-import json
 import os
 import sys
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, AsyncIterator, Dict, List, Optional, Type
+from typing import Any, AsyncIterator, Dict, List, Optional, Type, ClassVar
 
 from mcp.server.fastmcp import FastMCP
 from agno.agent import Agent
@@ -17,7 +15,7 @@ from agno.tools.exa import ExaTools
 from agno.tools.thinking import ThinkingTools
 from dotenv import load_dotenv
 from pydantic import (BaseModel, ConfigDict, Field, ValidationError,
-                      field_validator, model_validator)
+                      field_validator, model_validator, ValidationInfo)
 
 import logging
 import logging.handlers
@@ -73,64 +71,63 @@ logger = setup_logging()
 
 class ThoughtData(BaseModel):
     """
-    Represents the data structure for a single thought in the sequential
-    thinking process. This model is used as the input schema for the
-    'sequentialthinking' tool.
+    Represents the data structure for a single thought within the sequential
+    thinking process. Serves as the input schema for the 'sequentialthinking' tool.
     """
     thought: str = Field(
         ...,
-        description="The content of the current thought or step. Make it specific enough to imply the desired action (e.g., 'Analyze X', 'Critique Y', 'Plan Z', 'Research A').",
+        description="Content of the current thought or step. Should be specific enough to imply the desired action (e.g., 'Analyze X', 'Critique Y', 'Plan Z', 'Research A').",
         min_length=1
     )
     thoughtNumber: int = Field(
         ...,
-        description="The sequence number of this thought.",
+        description="Sequence number of this thought (starting from 1).",
         ge=1
     )
     totalThoughts: int = Field(
         ...,
-        description="The estimated total thoughts required.",
-        ge=1
+        description="Estimated total number of thoughts required for the entire process.",
+        ge=1 # Basic positive check; minimum value is enforced by validator.
     )
     nextThoughtNeeded: bool = Field(
         ...,
-        description="Indicates if another thought step is needed after this one."
+        description="Indicates if another thought step is expected after this one."
     )
     isRevision: bool = Field(
         False,
-        description="Indicates if this thought revises a previous thought."
+        description="Flags if this thought revises a previous one."
     )
     revisesThought: Optional[int] = Field(
         None,
-        description="The number of the thought being revised, if isRevision is True.",
+        description="The 'thoughtNumber' being revised, required if isRevision is True.",
         ge=1
     )
     branchFromThought: Optional[int] = Field(
         None,
-        description="The thought number from which this thought branches.",
+        description="The 'thoughtNumber' from which this thought initiates a branch.",
         ge=1
     )
     branchId: Optional[str] = Field(
         None,
-        description="An identifier for the branch, if branching."
+        description="A unique identifier for the branch, required if branchFromThought is set."
     )
     needsMoreThoughts: bool = Field(
         False,
-        description="Indicates if more thoughts are needed beyond the current estimate."
+        description="Flags if more thoughts are needed beyond the current 'totalThoughts' estimate."
     )
 
     # Pydantic model configuration
     model_config = ConfigDict(
         validate_assignment=True,
         extra="forbid",
-        frozen=True,  # Consider making it mutable if logic needs modification within tool
+        frozen=True,  # Immutable; consider mutability if in-tool modification is needed.
         arbitrary_types_allowed=True,
         json_schema_extra={
             "examples": [
                 {
                     "thought": "Analyze the core assumptions of the previous step.",
                     "thoughtNumber": 2,
-                    "totalThoughts": 5,
+                    "totalThoughts": 5, # Example reflects minimum
                     "nextThoughtNeeded": True,
                     "isRevision": False,
                     "revisesThought": None,
@@ -141,7 +138,7 @@ class ThoughtData(BaseModel):
                 {
                     "thought": "Critique the proposed solution for potential biases.",
                     "thoughtNumber": 4,
-                    "totalThoughts": 5,
+                    "totalThoughts": 5, # Example reflects minimum
                     "nextThoughtNeeded": True,
                     "isRevision": False,
                     "revisesThought": None,
@@ -154,37 +151,52 @@ class ThoughtData(BaseModel):
     )
 
     # --- Validators ---
+    MIN_TOTAL_THOUGHTS: ClassVar[int] = 5 # Class constant for minimum required total thoughts.
+
+    @field_validator('totalThoughts')
+    @classmethod
+    def validate_total_thoughts_minimum(cls, v: int) -> int:
+        """Ensures 'totalThoughts' meets the defined minimum requirement."""
+        if v < cls.MIN_TOTAL_THOUGHTS:
+            logger.info(
+                f"Input totalThoughts ({v}) is below suggested minimum {cls.MIN_TOTAL_THOUGHTS}. "
+                f"Adjusting to {cls.MIN_TOTAL_THOUGHTS}."
+            )
+            return cls.MIN_TOTAL_THOUGHTS
+        return v
 
     @field_validator('revisesThought')
     @classmethod
-    def validate_revises_thought(cls, v: Optional[int], values: Dict[str, Any]) -> Optional[int]:
-        is_revision = values.data.get('isRevision', False)
+    def validate_revises_thought(cls, v: Optional[int], info: ValidationInfo) -> Optional[int]:
+        """Validates 'revisesThought' logic."""
+        is_revision = info.data.get('isRevision', False)
         if v is not None and not is_revision:
             raise ValueError('revisesThought can only be set when isRevision is True')
-        if v is not None and 'thoughtNumber' in values.data and v >= values.data['thoughtNumber']:
+        # Ensure the revised thought number is valid and precedes the current thought
+        if v is not None and 'thoughtNumber' in info.data and v >= info.data['thoughtNumber']:
              raise ValueError('revisesThought must be less than thoughtNumber')
         return v
 
     @field_validator('branchId')
     @classmethod
-    def validate_branch_id(cls, v: Optional[str], values: Dict[str, Any]) -> Optional[str]:
-        branch_from_thought = values.data.get('branchFromThought')
+    def validate_branch_id(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
+        """Validates 'branchId' logic."""
+        branch_from_thought = info.data.get('branchFromThought')
         if v is not None and branch_from_thought is None:
             raise ValueError('branchId can only be set when branchFromThought is set')
         return v
 
     @model_validator(mode='after')
     def validate_thought_numbers(self) -> 'ThoughtData':
-        # Allow thoughtNumber > totalThoughts for dynamic adjustment downstream
-        # revisesThought validation moved to field_validator for better context access
+        """Performs model-level validation on thought numbering."""
+        # Allow thoughtNumber > totalThoughts for dynamic adjustment downstream.
+        # revisesThought validation is handled by its field_validator.
         if self.branchFromThought is not None and self.branchFromThought >= self.thoughtNumber:
             raise ValueError('branchFromThought must be less than thoughtNumber')
+        # Check for self.thoughtNumber <= self.totalThoughts removed;
+        # allows dynamic extension before needsMoreThoughts logic applies.
+        # Minimum totalThoughts is handled by its own validator.
         return self
-
-    def dict(self) -> Dict[str, Any]:
-        """Convert thought data to dictionary format for serialization"""
-        # Use Pydantic's built-in method, handling potential None values if needed
-        return self.model_dump(exclude_none=True)
 
 
 # --- Utility for Formatting Thoughts (for Logging) ---
@@ -620,75 +632,82 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
              return f"Critical Error: Application context not available and re-initialization failed: {init_err}"
              # Or raise Exception("Critical Error: Application context not available.")
 
-    MIN_TOTAL_THOUGHTS = 5 # Keep a minimum suggestion
-
     try:
         # --- Initial Validation and Adjustments ---
-        adjusted_total_thoughts = max(MIN_TOTAL_THOUGHTS, totalThoughts)
-        if adjusted_total_thoughts != totalThoughts:
-            logger.info(f"Initial totalThoughts ({totalThoughts}) is below suggested minimum {MIN_TOTAL_THOUGHTS}. Proceeding, but consider if more steps might be needed.")
-            # Let the LLM manage the estimate.
-
-        adjusted_next_thought_needed = nextThoughtNeeded
-        if thoughtNumber >= totalThoughts and not needsMoreThoughts:
-             adjusted_next_thought_needed = False
-
-        # If extending, ensure totalThoughts increases and next is needed
-        if needsMoreThoughts and thoughtNumber >= totalThoughts:
-            totalThoughts = thoughtNumber + 2  # Extend by at least 2
-            logger.info(f"Extended totalThoughts to {totalThoughts} due to needsMoreThoughts flag.")
-            adjusted_next_thought_needed = True # Ensure we continue
-
-        # Create ThoughtData instance *after* initial adjustments
+        # Create ThoughtData instance first - validation happens here
         current_input_thought = ThoughtData(
             thought=thought,
             thoughtNumber=thoughtNumber,
-            totalThoughts=totalThoughts, # Use original or extended totalThoughts
-            nextThoughtNeeded=adjusted_next_thought_needed,
+            totalThoughts=totalThoughts, # Pydantic validator handles minimum now
+            nextThoughtNeeded=nextThoughtNeeded,
             isRevision=isRevision,
             revisesThought=revisesThought,
             branchFromThought=branchFromThought,
             branchId=branchId,
-            needsMoreThoughts=needsMoreThoughts # Preserve flag
+            needsMoreThoughts=needsMoreThoughts
         )
+
+        # Use the validated/adjusted value from the instance
+        adjusted_total_thoughts = current_input_thought.totalThoughts
+
+        # Adjust nextThoughtNeeded based on validated totalThoughts
+        adjusted_next_thought_needed = current_input_thought.nextThoughtNeeded
+        if current_input_thought.thoughtNumber >= adjusted_total_thoughts and not current_input_thought.needsMoreThoughts:
+             adjusted_next_thought_needed = False
+
+        # Re-create or update the instance if nextThoughtNeeded changed
+        # Pydantic models are typically immutable (frozen=True), so create a new one if needed.
+        # Check if adjustment is necessary before creating new object
+        final_thought_data = current_input_thought
+        if adjusted_next_thought_needed != current_input_thought.nextThoughtNeeded:
+             logger.info(f"Adjusting nextThoughtNeeded from {current_input_thought.nextThoughtNeeded} to {adjusted_next_thought_needed} based on thoughtNumber/totalThoughts.")
+             # Since frozen=True, we need to create a new instance or handle mutability differently.
+             # Easiest here might be to create a mutable copy for this logic if needed,
+             # or pass adjusted_next_thought_needed separately. Let's pass it separately for now.
+             # OR, make the model mutable if this becomes complex.
+             # Let's keep it simple: the logic below uses the adjusted flag directly.
 
         # --- Logging and History Update ---
         log_prefix = "--- Received Thought ---"
-        if current_input_thought.isRevision:
-            log_prefix = f"--- Received REVISION Thought (revising #{current_input_thought.revisesThought}) ---"
-        elif current_input_thought.branchFromThought is not None:
-            log_prefix = f"--- Received BRANCH Thought (from #{current_input_thought.branchFromThought}, ID: {current_input_thought.branchId}) ---"
+        if final_thought_data.isRevision:
+            log_prefix = f"--- Received REVISION Thought (revising #{final_thought_data.revisesThought}) ---"
+        elif final_thought_data.branchFromThought is not None:
+            log_prefix = f"--- Received BRANCH Thought (from #{final_thought_data.branchFromThought}, ID: {final_thought_data.branchId}) ---"
 
-        formatted_log_thought = format_thought_for_log(current_input_thought)
+        # Use the potentially adjusted nextThoughtNeeded in the log format if desired
+        # For simplicity, we log the original input values captured in final_thought_data here.
+        # The functional logic later will use adjusted_next_thought_needed where necessary.
+        formatted_log_thought = format_thought_for_log(final_thought_data)
         logger.info(f"\n{log_prefix}\n{formatted_log_thought}\n")
 
-        # Add the thought to history
-        app_context.add_thought(current_input_thought)
+        # Add the *validated* thought to history
+        app_context.add_thought(final_thought_data)
+
 
         # --- Process Thought with Team (Coordinate Mode) ---
-        logger.info(f"Passing thought #{thoughtNumber} to the Coordinator...")
+        logger.info(f"Passing thought #{final_thought_data.thoughtNumber} to the Coordinator...")
 
         # Prepare input for the team coordinator. Pass the core thought content.
         # Include context about revision/branching directly in the input string for the coordinator.
-        input_prompt = f"Process Thought #{current_input_thought.thoughtNumber}:\n"
-        if current_input_thought.isRevision and current_input_thought.revisesThought is not None:
+        input_prompt = f"Process Thought #{final_thought_data.thoughtNumber}:\n"
+        if final_thought_data.isRevision and final_thought_data.revisesThought is not None:
              # Find the original thought text
              original_thought_text = "Unknown Original Thought"
              for hist_thought in app_context.thought_history[:-1]: # Exclude current one
-                 if hist_thought.thoughtNumber == current_input_thought.revisesThought:
+                 if hist_thought.thoughtNumber == final_thought_data.revisesThought:
                      original_thought_text = hist_thought.thought
                      break
-             input_prompt += f"**This is a REVISION of Thought #{current_input_thought.revisesThought}** (Original: \"{original_thought_text}\").\n"
-        elif current_input_thought.branchFromThought is not None and current_input_thought.branchId is not None:
+             input_prompt += f"**This is a REVISION of Thought #{final_thought_data.revisesThought}** (Original: \"{original_thought_text}\").\n"
+        elif final_thought_data.branchFromThought is not None and final_thought_data.branchId is not None:
              # Find the branching point thought text
              branch_point_text = "Unknown Branch Point"
              for hist_thought in app_context.thought_history[:-1]:
-                 if hist_thought.thoughtNumber == current_input_thought.branchFromThought:
+                 if hist_thought.thoughtNumber == final_thought_data.branchFromThought:
                      branch_point_text = hist_thought.thought
                      break
-             input_prompt += f"**This is a BRANCH (ID: {current_input_thought.branchId}) from Thought #{current_input_thought.branchFromThought}** (Origin: \"{branch_point_text}\").\n"
+             input_prompt += f"**This is a BRANCH (ID: {final_thought_data.branchId}) from Thought #{final_thought_data.branchFromThought}** (Origin: \"{branch_point_text}\").\n"
 
-        input_prompt += f"\nThought Content: \"{current_input_thought.thought}\""
+        input_prompt += f"\nThought Content: \"{final_thought_data.thought}\""
 
         # Call the team's arun method. The coordinator agent will handle it.
         team_response = await app_context.team.arun(input_prompt)
@@ -697,14 +716,15 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
         coordinator_response_content = team_response.content if hasattr(team_response, 'content') else None
         coordinator_response = str(coordinator_response_content) if coordinator_response_content is not None else ""
 
-        logger.info(f"Coordinator finished processing thought #{thoughtNumber}.")
+        logger.info(f"Coordinator finished processing thought #{final_thought_data.thoughtNumber}.")
         logger.debug(f"Coordinator Raw Response:\n{coordinator_response}")
 
 
         # --- Guidance for Next Step (Coordinate Mode) ---
         additional_guidance = "\n\nGuidance for next step:" # Initialize
 
-        if not current_input_thought.nextThoughtNeeded:
+        # Use the *potentially adjusted* flag here for correct guidance
+        if not adjusted_next_thought_needed:
             # Keep the message for the final thought concise
             additional_guidance = "\n\nThis is the final thought. Review the Coordinator's final synthesis."
         else:
@@ -716,21 +736,21 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
 
         # --- Build Result ---
         result_data = {
-            "processedThoughtNumber": current_input_thought.thoughtNumber,
-            "estimatedTotalThoughts": current_input_thought.totalThoughts,
-            "nextThoughtNeeded": current_input_thought.nextThoughtNeeded,
+            "processedThoughtNumber": final_thought_data.thoughtNumber,
+            "estimatedTotalThoughts": final_thought_data.totalThoughts, # Use validated value
+            "nextThoughtNeeded": adjusted_next_thought_needed, # Use potentially adjusted value
             # Ensure both parts are strings before concatenating
             "coordinatorResponse": coordinator_response + str(additional_guidance),
             "branches": list(app_context.branches.keys()),
             "thoughtHistoryLength": len(app_context.thought_history),
             "branchDetails": {
-                "currentBranchId": current_input_thought.branchId if current_input_thought.branchFromThought is not None else "main",
-                "branchOriginThought": current_input_thought.branchFromThought,
+                "currentBranchId": final_thought_data.branchId if final_thought_data.branchFromThought is not None else "main",
+                "branchOriginThought": final_thought_data.branchFromThought,
                 "allBranches": app_context.get_all_branches() # Include counts
             },
-            "isRevision": current_input_thought.isRevision,
-            "revisesThought": current_input_thought.revisesThought if current_input_thought.isRevision else None,
-            "isBranch": current_input_thought.branchFromThought is not None,
+            "isRevision": final_thought_data.isRevision,
+            "revisesThought": final_thought_data.revisesThought if final_thought_data.isRevision else None,
+            "isBranch": final_thought_data.branchFromThought is not None,
             "status": "success"
         }
 
