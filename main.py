@@ -202,31 +202,63 @@ class ThoughtData(BaseModel):
 # --- Utility for Formatting Thoughts (for Logging) ---
 
 def format_thought_for_log(thought_data: ThoughtData) -> str:
-    """Formats a thought for simpler logging purposes."""
-    prefix = ''
-    context = ''
-    branch_info_log = ''
+    """Formats a ThoughtData object into a human-readable string for logging.
 
+    Creates a multi-line log entry summarizing the key details of a thought,
+    including its type (standard, revision, or branch), sequence number,
+    content, and status flags.
+
+    Args:
+        thought_data: The ThoughtData object containing the thought details.
+
+    Returns:
+        A formatted string suitable for logging.
+
+    Example format:
+        Revision 5/10 (revising thought 3)
+          Thought: Refined the analysis based on critique.
+          Next Needed: True, Needs More: False
+        Branch 6/10 (from thought 4, ID: alt-approach)
+          Thought: Exploring an alternative approach.
+          Branch Details: ID='alt-approach', originates from Thought #4
+          Next Needed: True, Needs More: False
+        Thought 1/5
+          Thought: Initial plan for the analysis.
+          Next Needed: True, Needs More: False
+    """
+    prefix: str
+    context: str = ""
+    branch_info_log: Optional[str] = None # Optional line for branch-specific details
+
+    # Determine the type of thought and associated context
     if thought_data.isRevision and thought_data.revisesThought is not None:
         prefix = 'Revision'
         context = f' (revising thought {thought_data.revisesThought})'
     elif thought_data.branchFromThought is not None and thought_data.branchId is not None:
         prefix = 'Branch'
         context = f' (from thought {thought_data.branchFromThought}, ID: {thought_data.branchId})'
+        # Prepare the extra detail line for branches
         branch_info_log = f"  Branch Details: ID='{thought_data.branchId}', originates from Thought #{thought_data.branchFromThought}"
     else:
+        # Standard thought
         prefix = 'Thought'
-        context = ''
+        # No extra context needed for standard thoughts
 
+    # Construct the header line (e.g., "Thought 1/5", "Revision 3/5 (revising thought 2)")
     header = f"{prefix} {thought_data.thoughtNumber}/{thought_data.totalThoughts}{context}"
 
-    log_entry = f"{header}\n"
-    log_entry += f"  Thought: {thought_data.thought}\n"
+    # Assemble the log entry lines
+    log_lines = [
+        header,
+        f"  Thought: {thought_data.thought}" # Indent thought content
+    ]
     if branch_info_log:
-        log_entry += f"{branch_info_log}\n"
-    log_entry += f"  Next Needed: {thought_data.nextThoughtNeeded}, Needs More: {thought_data.needsMoreThoughts}"
+        log_lines.append(branch_info_log) # Add branch details if applicable
 
-    return log_entry
+    # Add status flags line
+    log_lines.append(f"  Next Needed: {thought_data.nextThoughtNeeded}, Needs More: {thought_data.needsMoreThoughts}")
+
+    return "\n".join(log_lines)
 
 
 # --- Agno Multi-Agent Team Setup ---
