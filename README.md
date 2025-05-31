@@ -87,11 +87,11 @@ The `env` section within your MCP client configuration should include the API ke
             "mcp-server-mas-sequential-thinking" // Or the path to your main script, e.g., "main.py"
          ],
          "env": {
-            "LLM_PROVIDER": "deepseek", // Or "groq", "openrouter"
+            "LLM_PROVIDER": "ollama", // "deepseek" Or "groq", "openrouter"
             // "GROQ_API_KEY": "your_groq_api_key", // Only if LLM_PROVIDER="groq"
-            "DEEPSEEK_API_KEY": "your_deepseek_api_key", // Default provider
+            // "DEEPSEEK_API_KEY": "your_deepseek_api_key", // Default provider
             // "OPENROUTER_API_KEY": "your_openrouter_api_key", // Only if LLM_PROVIDER="openrouter"
-            "DEEPSEEK_BASE_URL": "your_base_url_if_needed", // Optional: If using a custom endpoint for DeepSeek
+            "LLM_BASE_URL": "your_base_url_if_needed", // Optional: If using a custom endpoint for DeepSeek
             "EXA_API_KEY": "your_exa_api_key" // Only if using Exa
          }
       }
@@ -121,15 +121,15 @@ npx -y @smithery/cli install @FradSer/mcp-server-mas-sequential-thinking --clien
     ```dotenv
     # --- LLM Configuration ---
     # Select the LLM provider: "deepseek" (default), "groq", or "openrouter"
-    LLM_PROVIDER="deepseek"
+    LLM_PROVIDER="ollama"
 
     # Provide the API key for the chosen provider:
     # GROQ_API_KEY="your_groq_api_key"
-    DEEPSEEK_API_KEY="your_deepseek_api_key"
+    # DEEPSEEK_API_KEY="your_deepseek_api_key"
     # OPENROUTER_API_KEY="your_openrouter_api_key"
 
     # Optional: Base URL override (e.g., for custom DeepSeek endpoints)
-    # DEEPSEEK_BASE_URL="your_base_url_if_needed"
+    # LLM_BASE_URL="your_base_url_if_needed"
 
     # Optional: Specify different models for Team Coordinator and Specialist Agents
     # Defaults are set within the code based on the provider if these are not set.
@@ -302,9 +302,24 @@ The tool returns a JSON string containing:
     mypy .
     pytest
     ```
-5.  **Contribution:**
+
+5.  **Testing the Application:**
+6.  Testing: Test your MCP server locally before deploying using MCP Inspector. Please ensure your Dockerfile builds locally first before deploying.
+7.  ```bash
+    npx @modelcontextprotocol/inspector uv run main.py
+    ```
+    Open the url http://127.0.0.1:6274/, then click on the "Run" button to test your MCP server locally. Then click on the "Tools" button to see the tools that are available in the MCP server, and verify that the tool "sequentialthinking" is available.
+    Copy "I need to test hf-mcp-server-mas-sequential-thinking, I just hope mcp inspector will help me" in the "thought" field, "1" in the "thoughtNumber"and in the "totalThoughts" field, and check the "nextThoughtNeeded" checkbox. Then click on the "Run Tool" button to test your MCP server locally.
+    The model should return a response with a new thought, a new thought number, a new total thoughts, and Tool Result: Success. If you see this, your MCP server is working correctly.
+8.  **Contribution:**
     (Consider adding contribution guidelines: branching strategy, pull request process, code style).
 
 ## License
 
 MIT
+
+## Release Notes
+
+### 0.3.0
+    - Added support for Ollama FULL LOCAL (no API key needed, but requires Ollama installed and running locally)
+    - Updated dependencies
