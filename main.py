@@ -349,6 +349,7 @@ def create_sequential_thinking_team() -> Team:
         ],
         model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
+        enable_memory=True,
         markdown=True
     )
 
@@ -372,6 +373,7 @@ def create_sequential_thinking_team() -> Team:
         ],
         model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
+        enable_memory=True,
         markdown=True
     )
 
@@ -395,6 +397,7 @@ def create_sequential_thinking_team() -> Team:
         ],
         model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
+        enable_memory=True,
         markdown=True
     )
 
@@ -419,6 +422,7 @@ def create_sequential_thinking_team() -> Team:
         ],
         model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
+        enable_memory=True,
         markdown=True
     )
 
@@ -442,6 +446,7 @@ def create_sequential_thinking_team() -> Team:
         ],
         model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
+        enable_memory=True,
         markdown=True
     )
 
@@ -494,8 +499,15 @@ def create_sequential_thinking_team() -> Team:
 # --- Application Context and Lifespan Management ---
 
 @dataclass
-class AppContext:
-    """Holds shared application resources, like the Agno team."""
+class SessionMemory:
+    """
+    Holds the shared, short-term memory for a single problem-solving session.
+    This includes the history of thoughts and any branches explored.
+
+    This implementation is in-memory, but could be extended to use a persistent
+    backend like SQLite via SQLAlchemy if cross-session memory is required.
+    This would involve initializing a database and mapping these fields to a table.
+    """
     team: Team
     thought_history: List[ThoughtData] = field(default_factory=list)
     branches: Dict[str, List[ThoughtData]] = field(default_factory=dict)
@@ -518,7 +530,7 @@ class AppContext:
         """Get all branch IDs and their thought counts"""
         return {branch_id: len(thoughts) for branch_id, thoughts in self.branches.items()}
 
-app_context: Optional[AppContext] = None
+app_context: Optional[SessionMemory] = None
 
 @asynccontextmanager
 async def app_lifespan() -> AsyncIterator[None]:
@@ -527,7 +539,7 @@ async def app_lifespan() -> AsyncIterator[None]:
     logger.info("Initializing application resources (Coordinate Mode)...")
     try:
         team = create_sequential_thinking_team()
-        app_context = AppContext(team=team)
+        app_context = SessionMemory(team=team)
         provider = os.environ.get("LLM_PROVIDER", "deepseek").lower()
         logger.info(f"Agno team initialized in coordinate mode using provider: {provider}.")
     except Exception as e:
@@ -662,7 +674,7 @@ async def sequentialthinking(thought: str, thoughtNumber: int, totalThoughts: in
         logger.warning("Attempting to re-initialize team due to missing context...")
         try:
              team = create_sequential_thinking_team()
-             app_context = AppContext(team=team) # Re-create context
+             app_context = SessionMemory(team=team) # Re-create context
              logger.info("Successfully re-initialized team and context.")
         except Exception as init_err:
              logger.critical(f"Failed to re-initialize Agno team during tool call: {init_err}", exc_info=True)
@@ -820,7 +832,7 @@ def run():
         logger.info("Initializing application resources directly (Coordinate Mode)...")
         try:
              team = create_sequential_thinking_team()
-             app_context = AppContext(team=team)
+             app_context = SessionMemory(team=team)
              logger.info(f"Agno team initialized directly in coordinate mode using provider: {selected_provider}.")
         except Exception as e:
              logger.critical(f"Failed to initialize Agno team: {e}", exc_info=True)
