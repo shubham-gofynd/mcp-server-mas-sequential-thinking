@@ -8,12 +8,13 @@ authors = [
     { name = "Frad LEE", email = "fradser@gmail.com" },
 ]
 dependencies = [
-    "agno",
+    "agno>=0.2.4",
     "asyncio",
     "exa-py",
     "python-dotenv",
     "mcp",
     "groq",
+    "sqlalchemy",
 ]
 
 [project.optional-dependencies]
