@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Use `uv` for dependency management (preferred over pip)
 - Install dependencies: `uv pip install -e .` or `uv pip install -r requirements.txt`
 - Install dev dependencies: `uv pip install -e ".[dev]"`
+- Upgrade agno: `uv pip install --upgrade agno`
+- Test Python imports: `uv run python -c "import agno; print('Agno imported successfully')"`
 
 ### Code Quality
 - Linting: `ruff check . --fix`
@@ -16,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Testing: `pytest`
 
 ### Running the Server
-- Direct execution: `python main.py`
+- Direct execution: `uv run python main.py`
 - Using uv: `uv run mcp-server-mas-sequential-thinking`
 - Package execution: `uvx mcp-server-mas-sequential-thinking`
 

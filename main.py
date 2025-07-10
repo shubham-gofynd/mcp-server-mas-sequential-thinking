@@ -343,7 +343,6 @@ def create_sequential_thinking_team() -> Team:
         ],
         model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
-        enable_memory=True,
         markdown=True
     )
 
@@ -367,7 +366,6 @@ def create_sequential_thinking_team() -> Team:
         ],
         model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
-        enable_memory=True,
         markdown=True
     )
 
@@ -391,7 +389,6 @@ def create_sequential_thinking_team() -> Team:
         ],
         model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
-        enable_memory=True,
         markdown=True
     )
 
@@ -416,7 +413,6 @@ def create_sequential_thinking_team() -> Team:
         ],
         model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
-        enable_memory=True,
         markdown=True
     )
 
@@ -440,7 +436,6 @@ def create_sequential_thinking_team() -> Team:
         ],
         model=agent_model_instance, # Use the designated agent model
         add_datetime_to_instructions=True,
-        enable_memory=True,
         markdown=True
     )
 
