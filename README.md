@@ -317,12 +317,10 @@ The tool returns a JSON string containing:
 8.  **Contribution:**
     (Consider adding contribution guidelines: branching strategy, pull request process, code style).
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes.
+
 ## License
 
 MIT
-
-## Release Notes
-
-### 0.3.0
-    - Added support for Ollama FULL LOCAL (no API key needed, but requires Ollama installed and running locally)
-    - Updated dependencies
