@@ -9,7 +9,7 @@ authors = [
     { name = "Alain Ivars", email = "alainivars@gmail.com" },
 ]
 dependencies = [
-    "agno",
+    "agno>=0.2.4",
     "asyncio",
     "exa-py",
     "python-dotenv",
@@ -18,6 +18,7 @@ dependencies = [
     "ollama",
     "openrouter",
     "httpx[socks]>=0.28.1",
+    "sqlalchemy",
 ]
 
 [project.optional-dependencies]
