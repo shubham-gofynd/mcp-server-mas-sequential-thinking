@@ -299,10 +299,10 @@ def get_model_config() -> tuple[Type[Model], str, str]:
         agent_model_id = os.environ.get("OLLAMA_AGENT_MODEL_ID", "devstral:24b")
         logger.info(f"Using Ollama: Team Model='{team_model_id}', Agent Model='{agent_model_id}'")
     else:
-        logger.error(f"Unsupported LLM_PROVIDER: {provider}. Defaulting to Ollama.")
-        ModelClass = Ollama
-        team_model_id = "deepseek-r1:7b"
-        agent_model_id = "deepseek-r1:7b"
+        logger.error(f"Unsupported LLM_PROVIDER: {provider}. Defaulting to DeepSeek.")
+        ModelClass = DeepSeek
+        team_model_id = "deepseek-chat"
+        agent_model_id = "deepseek-chat"
 
     return ModelClass, team_model_id, agent_model_id
 

@@ -84,12 +84,12 @@
       "mas-sequential-thinking": {
       "command": "uvx", // 或 "python", "path/to/venv/bin/python" 等
       "args": [
-        "hf-mcp-server-mas-sequential-thinking" // 或指向主脚本的路径, 例如 "main.py"
+        "mcp-server-mas-sequential-thinking" // 或指向主脚本的路径, 例如 "main.py"
       ],
       "env": {
-        "LLM_PROVIDER": "ollama", // 或 "groq", "openrouter"
+        "LLM_PROVIDER": "deepseek", // 或 "ollama", "groq", "openrouter"
         // "GROQ_API_KEY": "你的_groq_api_密钥", // 仅当 LLM_PROVIDER="groq" 时需要
-        // "DEEPSEEK_API_KEY": "你的_deepseek_api_密钥", // 默认提供商
+        "DEEPSEEK_API_KEY": "你的_deepseek_api_密钥", // 默认提供商
         // "OPENROUTER_API_KEY": "你的_openrouter_api_密钥", // 仅当 LLM_PROVIDER="openrouter" 时需要
         "LLM_BASE_URL": "你的_base_url_如果需要", // 可选：如果为 DeepSeek 使用自定义端点
         "EXA_API_KEY": "你的_exa_api_密钥" // 仅当使用 Exa 时需要
@@ -103,8 +103,8 @@
 
 1.  **克隆仓库：**
     ```bash
-    git clone git@github.com:FradSer/hf-mcp-server-mas-sequential-thinking.git
-    cd hf-mcp-server-mas-sequential-thinking
+    git clone git@github.com:FradSer/mcp-server-mas-sequential-thinking.git
+    cd mcp-server-mas-sequential-thinking
     ```
 
 2.  **设置环境变量：**
@@ -182,7 +182,7 @@
 
 1.  **使用 `uv run` (推荐使用):**
     ```bash
-    uv --directory /path/to/hf-mcp-server-mas-sequential-thinking run hf-mcp-server-mas-sequential-thinking
+    uv --directory /path/to/mcp-server-mas-sequential-thinking run mcp-server-mas-sequential-thinking
     ```
 2.  **直接使用 Python:**
 
@@ -265,8 +265,8 @@ LLM 会迭代地与此工具交互：
 
 1.  **克隆仓库：** (同安装部分)
     ```bash
-    git clone git@github.com:FradSer/hf-mcp-server-mas-sequential-thinking.git
-    cd hf-mcp-server-mas-sequential-thinking
+    git clone git@github.com:FradSer/mcp-server-mas-sequential-thinking.git
+    cd mcp-server-mas-sequential-thinking
     ```
 2.  **设置虚拟环境：** (推荐)
     ```bash

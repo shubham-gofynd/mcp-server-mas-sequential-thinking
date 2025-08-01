@@ -12,9 +12,8 @@
             "console": "integratedTerminal",
             // "args": "${command:pickArgs}"
             "env": {
-                "LLM_PROVIDER": "Ollama",
-                "LLM_MODEL": "devstral:24b",
-                "LLM_BASE_URL": "http://localhost:11434",
+                "LLM_PROVIDER": "deepseek",
+                "DEEPSEEK_API_KEY": "your_deepseek_api_key",
                 "LLM_TEMPERATURE": "0.0"
             }
         }

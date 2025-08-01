@@ -89,9 +89,9 @@ The `env` section within your MCP client configuration should include the API ke
             "mcp-server-mas-sequential-thinking" // Or the path to your main script, e.g., "main.py"
          ],
          "env": {
-            "LLM_PROVIDER": "ollama", // "deepseek" Or "groq", "openrouter"
+            "LLM_PROVIDER": "deepseek", // "ollama", "groq", "openrouter"
             // "GROQ_API_KEY": "your_groq_api_key", // Only if LLM_PROVIDER="groq"
-            // "DEEPSEEK_API_KEY": "your_deepseek_api_key", // Default provider
+            "DEEPSEEK_API_KEY": "your_deepseek_api_key", // Default provider
             // "OPENROUTER_API_KEY": "your_openrouter_api_key", // Only if LLM_PROVIDER="openrouter"
             "LLM_BASE_URL": "your_base_url_if_needed", // Optional: If using a custom endpoint for DeepSeek
             "EXA_API_KEY": "your_exa_api_key" // Only if using Exa
@@ -122,15 +122,16 @@ npx -y @smithery/cli install @FradSer/mcp-server-mas-sequential-thinking --clien
     Create a `.env` file in the project root directory or export the variables directly into your environment:
     ```dotenv
     # --- LLM Configuration ---
-    # Select the LLM provider: "deepseek" (default), "groq", or "openrouter"
-    LLM_PROVIDER="ollama"
+    # Select the LLM provider: "deepseek" (default), "groq", "openrouter", or "ollama"
+    LLM_PROVIDER="deepseek"
 
     # Provide the API key for the chosen provider:
     # GROQ_API_KEY="your_groq_api_key"
-    # DEEPSEEK_API_KEY="your_deepseek_api_key"
+    DEEPSEEK_API_KEY="your_deepseek_api_key"
     # OPENROUTER_API_KEY="your_openrouter_api_key"
+    # Note: Ollama requires no API key but needs local installation
 
-    # Optional: Base URL override (e.g., for custom DeepSeek endpoints)
+    # Optional: Base URL override (e.g., for custom endpoints)
     # LLM_BASE_URL="your_base_url_if_needed"
 
     # Optional: Specify different models for Team Coordinator and Specialist Agents
@@ -311,7 +312,7 @@ The tool returns a JSON string containing:
     npx @modelcontextprotocol/inspector uv run main.py
     ```
     Open the url http://127.0.0.1:6274/, then click on the "Run" button to test your MCP server locally. Then click on the "Tools" button to see the tools that are available in the MCP server, and verify that the tool "sequentialthinking" is available.
-    Copy "I need to test hf-mcp-server-mas-sequential-thinking, I just hope mcp inspector will help me" in the "thought" field, "1" in the "thoughtNumber"and in the "totalThoughts" field, and check the "nextThoughtNeeded" checkbox. Then click on the "Run Tool" button to test your MCP server locally.
+    Copy "I need to test mcp-server-mas-sequential-thinking, I just hope mcp inspector will help me" in the "thought" field, "1" in the "thoughtNumber"and in the "totalThoughts" field, and check the "nextThoughtNeeded" checkbox. Then click on the "Run Tool" button to test your MCP server locally.
     The model should return a response with a new thought, a new thought number, a new total thoughts, and Tool Result: Success. If you see this, your MCP server is working correctly.
 8.  **Contribution:**
     (Consider adding contribution guidelines: branching strategy, pull request process, code style).

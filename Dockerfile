@@ -24,4 +24,4 @@ RUN pip install --upgrade pip && \
 RUN pip install .
 
 # Command to run the MCP server
-CMD ["hf-mcp-server-mas-sequential-thinking"]
+CMD ["mcp-server-mas-sequential-thinking"]
