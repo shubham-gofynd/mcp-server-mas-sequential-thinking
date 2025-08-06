@@ -169,7 +169,7 @@ class ProcessingError(Exception):
 
 
 @asynccontextmanager
-async def app_lifespan() -> AsyncIterator[None]:
+async def app_lifespan(app) -> AsyncIterator[None]:
     """Manage application lifecycle with proper resource management."""
     config = ServerConfig.from_env()
     logger.info(f"Initializing Sequential Thinking Server with {config.provider} provider")
