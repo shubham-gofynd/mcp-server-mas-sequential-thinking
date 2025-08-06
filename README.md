@@ -69,6 +69,7 @@ This parallel processing leads to substantially higher token usage (potentially 
     - **Groq:** Requires `GROQ_API_KEY`.
     - **DeepSeek:** Requires `DEEPSEEK_API_KEY`.
     - **OpenRouter:** Requires `OPENROUTER_API_KEY`.
+    - **Kimi K2:** Uses OpenRouter with `OPENROUTER_API_KEY`. Configure using `LLM_PROVIDER=kimi`.
     - Configure the desired provider using the `LLM_PROVIDER` environment variable (defaults to `deepseek`).
 - Exa API Key (required only if using the Researcher agent's capabilities)
     - Set via the `EXA_API_KEY` environment variable.
@@ -89,10 +90,10 @@ The `env` section within your MCP client configuration should include the API ke
             "mcp-server-mas-sequential-thinking" // Or the path to your main script, e.g., "main.py"
          ],
          "env": {
-            "LLM_PROVIDER": "deepseek", // "ollama", "groq", "openrouter"
+            "LLM_PROVIDER": "deepseek", // "ollama", "groq", "openrouter", "kimi"
             // "GROQ_API_KEY": "your_groq_api_key", // Only if LLM_PROVIDER="groq"
             "DEEPSEEK_API_KEY": "your_deepseek_api_key", // Default provider
-            // "OPENROUTER_API_KEY": "your_openrouter_api_key", // Only if LLM_PROVIDER="openrouter"
+            // "OPENROUTER_API_KEY": "your_openrouter_api_key", // Only if LLM_PROVIDER="openrouter" or "kimi"
             "LLM_BASE_URL": "your_base_url_if_needed", // Optional: If using a custom endpoint for DeepSeek
             "EXA_API_KEY": "your_exa_api_key" // Only if using Exa
          }
@@ -122,14 +123,15 @@ npx -y @smithery/cli install @FradSer/mcp-server-mas-sequential-thinking --clien
     Create a `.env` file in the project root directory or export the variables directly into your environment:
     ```dotenv
     # --- LLM Configuration ---
-    # Select the LLM provider: "deepseek" (default), "groq", "openrouter", or "ollama"
+    # Select the LLM provider: "deepseek" (default), "groq", "openrouter", "ollama", or "kimi"
     LLM_PROVIDER="deepseek"
 
     # Provide the API key for the chosen provider:
     # GROQ_API_KEY="your_groq_api_key"
     DEEPSEEK_API_KEY="your_deepseek_api_key"
-    # OPENROUTER_API_KEY="your_openrouter_api_key"
+    # OPENROUTER_API_KEY="your_openrouter_api_key" # Required for both "openrouter" and "kimi" providers
     # Note: Ollama requires no API key but needs local installation
+    # Note: Kimi K2 uses OpenRouter API, so OPENROUTER_API_KEY is required for LLM_PROVIDER="kimi"
 
     # Optional: Base URL override (e.g., for custom endpoints)
     # LLM_BASE_URL="your_base_url_if_needed"
@@ -145,6 +147,9 @@ npx -y @smithery/cli install @FradSer/mcp-server-mas-sequential-thinking --clien
     # Example for OpenRouter:
     # OPENROUTER_TEAM_MODEL_ID="deepseek/deepseek-r1" # Example, adjust as needed
     # OPENROUTER_AGENT_MODEL_ID="deepseek/deepseek-chat" # Example, adjust as needed
+    # Example for Kimi K2:
+    # KIMI_TEAM_MODEL_ID="moonshotai/kimi-k2" # Uses Moonshot's Kimi K2 via OpenRouter
+    # KIMI_AGENT_MODEL_ID="moonshotai/kimi-k2" # Same model for both team and agents, optimized for tool use
 
     # --- External Tools ---
     # Required ONLY if the Researcher agent is used and needs Exa
