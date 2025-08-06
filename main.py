@@ -298,6 +298,11 @@ def get_model_config() -> tuple[Type[Model], str, str]:
         team_model_id = os.environ.get("OLLAMA_TEAM_MODEL_ID", "devstral:24b")
         agent_model_id = os.environ.get("OLLAMA_AGENT_MODEL_ID", "devstral:24b")
         logger.info(f"Using Ollama: Team Model='{team_model_id}', Agent Model='{agent_model_id}'")
+    elif provider.lower() == "kimi":
+        ModelClass = OpenRouter
+        team_model_id = os.environ.get("KIMI_TEAM_MODEL_ID", "moonshotai/kimi-k2")
+        agent_model_id = os.environ.get("KIMI_AGENT_MODEL_ID", "moonshotai/kimi-k2")
+        logger.info(f"Using Kimi K2 via OpenRouter: Team Model='{team_model_id}', Agent Model='{agent_model_id}'")
     else:
         logger.error(f"Unsupported LLM_PROVIDER: {provider}. Defaulting to DeepSeek.")
         ModelClass = DeepSeek
