@@ -233,7 +233,7 @@ npx -y @smithery/cli install @FradSer/mcp-server-mas-sequential-thinking --clien
        - GitHub Models usage counts toward GitHub's rate limits and pricing
        - Monitor your usage through GitHub's billing dashboard
        - Consider the Multi-Agent System's high token consumption when budgeting
-       - The default configuration (gpt-4o + gpt-4o-mini) provides the best balance of performance and cost
+       - The default configuration (openai/gpt-5 + openai/gpt-5-min) provides the best balance of performance and cost
 
 3.  **Install Dependencies:**
     It's highly recommended to use a virtual environment.
