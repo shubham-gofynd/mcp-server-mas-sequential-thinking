@@ -221,6 +221,21 @@ class TestGitHubOpenAIInitialization:
             
             # Verify the config has the correct API key
             assert config.api_key == 'ghp_test_token'
+    
+    @patch('agno.models.openai.OpenAIChat.__init__', return_value=None)
+    def test_github_openai_uses_correct_base_url(self, mock_openai_init):
+        """Test that GitHubOpenAI passes correct base_url to parent class."""
+        from config import GitHubOpenAI
+        
+        # Create GitHubOpenAI instance with test token
+        with patch.dict(os.environ, {'GITHUB_TOKEN': 'test-token'}):
+            github_client = GitHubOpenAI()
+        
+        # Verify that OpenAIChat.__init__ was called with correct base_url
+        mock_openai_init.assert_called_once()
+        call_kwargs = mock_openai_init.call_args[1]
+        assert call_kwargs['base_url'] == 'https://models.github.ai/inference'
+        assert call_kwargs['api_key'] == 'test-token'
 
 
 class TestGitHubStrategyIntegration:
