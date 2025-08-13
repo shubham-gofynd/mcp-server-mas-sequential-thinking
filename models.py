@@ -76,7 +76,7 @@ class ThoughtData(BaseModel):
     # Core fields
     thought: str = Field(..., min_length=1, description="Content of the thought")
     thought_number: int = Field(..., ge=1, description="Sequence number starting from 1")
-    total_thoughts: int = Field(..., ge=5, description="Estimated total thoughts (minimum 5)")
+    total_thoughts: int = Field(..., ge=1, description="Estimated total thoughts (minimum 1, suggest >=5)")
     next_needed: bool = Field(..., description="Whether another thought is needed")
     
     # Optional workflow fields
