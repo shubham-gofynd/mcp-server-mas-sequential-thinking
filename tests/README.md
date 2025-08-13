@@ -4,16 +4,16 @@ This directory contains comprehensive tests for the GitHub Models provider imple
 
 ## Overview
 
-The tests are designed to validate a `GitHubStrategy` class that follows the same pattern as other providers in the system but uses `ChatOpenAI` from langchain with GitHub Models base URL.
+The tests are designed to validate a `GitHubStrategy` class that follows the same pattern as other providers in the system but uses `GitHubOpenAI` (which extends OpenAI's agno provider) with GitHub Models base URL.
 
 ## Test Coverage
 
 The test suite includes the following test categories:
 
 ### 1. Default Configuration Tests (`TestGitHubStrategyDefaults`)
-- ✅ Test default model configurations (`openai/gpt-4o` and `openai/gpt-4o-mini`)
+- ✅ Test default model configurations (`openai/gpt-5` and `openai/gpt-5-min`)
 - ✅ Test API key name (`GITHUB_TOKEN`)
-- ✅ Test provider class returns `ChatOpenAI`
+- ✅ Test provider class returns `GitHubOpenAI`
 - ✅ Test inheritance from `ProviderStrategy`
 
 ### 2. Environment Override Tests (`TestGitHubStrategyEnvironmentOverrides`)
@@ -34,11 +34,11 @@ The test suite includes the following test categories:
 - ✅ Test configuration with full environment setup
 - ✅ Test `ModelConfig` immutability (frozen dataclass)
 
-### 5. ChatOpenAI Mocking Tests (`TestChatOpenAIMocking`)
-- ✅ Test ChatOpenAI initialization with GitHub Models base URL
-- ✅ Test ChatOpenAI with different team/agent models
-- ✅ Test ChatOpenAI without API key
-- ✅ Mock proper base URL: `https://models.inference.ai.azure.com`
+### 5. GitHubOpenAI Initialization Tests (`TestGitHubOpenAIInitialization`)
+- ✅ Test GitHubOpenAI initialization with GitHub Models base URL
+- ✅ Test GitHubOpenAI base URL configuration
+- ✅ Test GitHubOpenAI API key handling
+- ✅ Verify proper base URL: `https://models.github.ai/inference`
 
 ### 6. Integration Tests (`TestGitHubStrategyIntegration`)
 - ✅ Test strategy follows provider pattern
@@ -47,8 +47,8 @@ The test suite includes the following test categories:
 - ✅ Test full workflow simulation
 
 ### 7. Error Handling Tests (`TestGitHubStrategyErrorHandling`)
-- ✅ Test missing langchain_openai import
-- ✅ Test malformed environment variables
+- ✅ Test provider class returns valid callable class
+- ✅ Test malformed environment variables handling
 
 ## Running the Tests
 
@@ -112,8 +112,8 @@ def test_github_strategy_defaults(self):
     strategy = GitHubStrategy()
     
     # Act & Assert
-    assert strategy.default_team_model == "openai/gpt-4o"
-    assert strategy.default_agent_model == "openai/gpt-4o-mini"
+    assert strategy.default_team_model == "openai/gpt-5"
+    assert strategy.default_agent_model == "openai/gpt-5-min"
     assert strategy.api_key_name == "GITHUB_TOKEN"
 ```
 
@@ -121,9 +121,9 @@ def test_github_strategy_defaults(self):
 
 The tests use extensive mocking to:
 
-1. **Mock `langchain_openai.ChatOpenAI`** to avoid external dependencies
+1. **Mock `agno.models.openai.OpenAIChat`** to avoid external dependencies
 2. **Mock environment variables** using `patch.dict(os.environ, ...)`
-3. **Mock imports** to test error handling scenarios
+3. **Test GitHubOpenAI initialization** with proper base URL configuration
 4. **Verify method calls** and parameters passed to mocked objects
 
 ## Key Test Scenarios
@@ -139,27 +139,22 @@ def test_team_model_environment_override(self):
         assert config.team_model_id == 'openai/gpt-4-turbo'
 ```
 
-### ChatOpenAI Mocking
+### GitHubOpenAI Mocking
 
 ```python
-@patch('langchain_openai.ChatOpenAI')
-def test_chat_openai_initialization_with_github_base_url(self, mock_chat_openai):
+@patch('agno.models.openai.OpenAIChat')
+def test_github_openai_initialization(self, mock_openai_chat):
     strategy = GitHubStrategy()
-    expected_base_url = "https://models.inference.ai.azure.com"
+    expected_base_url = "https://models.github.ai/inference"
     
     with patch.dict(os.environ, {'GITHUB_TOKEN': 'test-token'}):
         config = strategy.get_config()
-        chat_instance = config.provider_class(
-            model=config.team_model_id,
-            api_key=config.api_key,
-            base_url=expected_base_url
-        )
         
-        mock_chat_openai.assert_called_with(
-            model=config.team_model_id,
-            api_key=config.api_key,
-            base_url=expected_base_url
-        )
+        # Get the GitHub OpenAI class and test instantiation
+        github_openai_class = config.provider_class
+        
+        # Verify it's the GitHubOpenAI class
+        assert github_openai_class.__name__ == 'GitHubOpenAI'
 ```
 
 ## Expected GitHubStrategy Implementation
@@ -167,19 +162,29 @@ def test_chat_openai_initialization_with_github_base_url(self, mock_chat_openai)
 Based on the tests, the expected implementation should look like:
 
 ```python
+class GitHubOpenAI(OpenAIChat):
+    """OpenAI provider configured for GitHub Models API."""
+    
+    def __init__(self, **kwargs):
+        # Set GitHub Models base URL
+        kwargs.setdefault('base_url', 'https://models.github.ai/inference')
+        # GitHub uses personal access tokens instead of API keys
+        if 'api_key' not in kwargs:
+            kwargs['api_key'] = os.environ.get('GITHUB_TOKEN')
+        super().__init__(**kwargs)
+
 class GitHubStrategy(ProviderStrategy):
     @property
     def provider_class(self):
-        from langchain_openai import ChatOpenAI
-        return ChatOpenAI
+        return GitHubOpenAI
     
     @property
     def default_team_model(self) -> str:
-        return "openai/gpt-4o"
+        return "openai/gpt-5"
     
     @property 
     def default_agent_model(self) -> str:
-        return "openai/gpt-4o-mini"
+        return "openai/gpt-5-min"
     
     @property
     def api_key_name(self) -> str:
@@ -188,7 +193,7 @@ class GitHubStrategy(ProviderStrategy):
 
 ## Notes
 
-- Tests assume the GitHub Models endpoint is: `https://models.inference.ai.azure.com`
+- Tests assume the GitHub Models endpoint is: `https://models.github.ai/inference`
 - The strategy uses `GITHUB_TOKEN` for authentication (GitHub personal access token)
 - Model IDs follow OpenAI naming convention with `openai/` prefix
 - Environment variables follow the pattern: `GITHUB_TEAM_MODEL_ID`, `GITHUB_AGENT_MODEL_ID`
