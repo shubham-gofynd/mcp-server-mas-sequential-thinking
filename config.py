@@ -118,7 +118,7 @@ class GitHubStrategy(ProviderStrategy):
         class GitHubOpenAI(OpenAIChat):
             def __init__(self, **kwargs):
                 # Set GitHub Models base URL
-                kwargs.setdefault('base_url', 'https://models.inference.ai.azure.com')
+                kwargs.setdefault('base_url', 'https://models.github.ai/inference')
                 # GitHub uses personal access tokens instead of API keys
                 if 'api_key' not in kwargs:
                     kwargs['api_key'] = os.environ.get('GITHUB_TOKEN')
@@ -129,12 +129,12 @@ class GitHubStrategy(ProviderStrategy):
     @property
     def default_team_model(self) -> str:
         """Return default team model for GitHub."""
-        return "gpt-4o"
+        return "openai/gpt-5"
     
     @property
     def default_agent_model(self) -> str:
         """Return default agent model for GitHub."""
-        return "gpt-4o-mini"
+        return "openai/gpt-5-min"
     
     @property
     def api_key_name(self) -> str:

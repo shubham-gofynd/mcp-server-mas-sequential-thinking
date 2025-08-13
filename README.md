@@ -119,8 +119,8 @@ For using GitHub Models specifically:
          "env": {
             "LLM_PROVIDER": "github",
             "GITHUB_TOKEN": "ghp_your_github_personal_access_token",
-            "GITHUB_TEAM_MODEL_ID": "openai/gpt-4o", // Optional: Team coordinator model (default: openai/gpt-4o)
-            "GITHUB_AGENT_MODEL_ID": "openai/gpt-4o-mini", // Optional: Specialist agents model (default: openai/gpt-4o-mini)
+            "GITHUB_TEAM_MODEL_ID": "openai/gpt-5", // Optional: Team coordinator model (default: openai/gpt-5)
+            "GITHUB_AGENT_MODEL_ID": "openai/gpt-5-min", // Optional: Specialist agents model (default: openai/gpt-5-min)
             "EXA_API_KEY": "your_exa_api_key" // Only if using Exa for research tasks
          }
       }
@@ -173,8 +173,8 @@ npx -y @smithery/cli install @FradSer/mcp-server-mas-sequential-thinking --clien
     # DEEPSEEK_TEAM_MODEL_ID="deepseek-chat" # Note: `deepseek-reasoner` is not recommended as it doesn't support function calling
     # DEEPSEEK_AGENT_MODEL_ID="deepseek-chat" # Recommended for specialists
     # Example for GitHub Models:
-    # GITHUB_TEAM_MODEL_ID="openai/gpt-4o" # Team coordinator (default: openai/gpt-4o)
-    # GITHUB_AGENT_MODEL_ID="openai/gpt-4o-mini" # Specialist agents (default: openai/gpt-4o-mini)
+    # GITHUB_TEAM_MODEL_ID="openai/gpt-5" # Team coordinator (default: openai/gpt-5)
+    # GITHUB_AGENT_MODEL_ID="openai/gpt-5-min" # Specialist agents (default: openai/gpt-5-min)
     # Example for OpenRouter:
     # OPENROUTER_TEAM_MODEL_ID="deepseek/deepseek-r1" # Example, adjust as needed
     # OPENROUTER_AGENT_MODEL_ID="deepseek/deepseek-chat" # Example, adjust as needed
@@ -202,21 +202,21 @@ npx -y @smithery/cli install @FradSer/mcp-server-mas-sequential-thinking --clien
        - The token format will be `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
     
     2. **Available Models and Use Cases:**
-       - **`openai/gpt-4o`** (Default for Team Coordinator):
-         - Latest GPT-4 Omni model
+       - **`openai/gpt-5`** (Default for Team Coordinator):
+         - Latest GPT-5 model
          - Best for complex reasoning, coordination, and synthesis tasks
          - Higher token cost but superior performance for the Team Coordinator role
          - Excellent function calling capabilities
        
-       - **`openai/gpt-4o-mini`** (Default for Specialist Agents):
-         - Lightweight version of GPT-4 Omni
+       - **`openai/gpt-5-min`** (Default for Specialist Agents):
+         - Lightweight version of GPT-5
          - Optimized for speed and cost-efficiency
          - Ideal for focused sub-tasks handled by specialist agents
          - Good balance of performance and cost for high-volume operations
        
-       - **`openai/gpt-4`**:
-         - Previous generation GPT-4 model
-         - Strong reasoning capabilities but slower than gpt-4o
+       - **`openai/gpt-4o`**:
+         - Previous generation GPT-4 Omni model
+         - Strong reasoning capabilities but slower than gpt-5
          - Can be used for either role depending on requirements
        
        - **`openai/gpt-3.5-turbo`**:
@@ -225,9 +225,9 @@ npx -y @smithery/cli install @FradSer/mcp-server-mas-sequential-thinking --clien
          - May have limitations with complex reasoning tasks
     
     3. **Recommended Configurations:**
-       - **High Performance:** `GITHUB_TEAM_MODEL_ID="openai/gpt-4o"`, `GITHUB_AGENT_MODEL_ID="openai/gpt-4o-mini"`
-       - **Balanced:** `GITHUB_TEAM_MODEL_ID="openai/gpt-4o"`, `GITHUB_AGENT_MODEL_ID="openai/gpt-3.5-turbo"`
-       - **Budget-Conscious:** `GITHUB_TEAM_MODEL_ID="openai/gpt-4o-mini"`, `GITHUB_AGENT_MODEL_ID="openai/gpt-3.5-turbo"`
+       - **High Performance:** `GITHUB_TEAM_MODEL_ID="openai/gpt-5"`, `GITHUB_AGENT_MODEL_ID="openai/gpt-5-min"`
+       - **Balanced:** `GITHUB_TEAM_MODEL_ID="openai/gpt-5"`, `GITHUB_AGENT_MODEL_ID="openai/gpt-3.5-turbo"`
+       - **Budget-Conscious:** `GITHUB_TEAM_MODEL_ID="openai/gpt-5-min"`, `GITHUB_AGENT_MODEL_ID="openai/gpt-3.5-turbo"`
     
     4. **Token Usage Considerations with GitHub Models:**
        - GitHub Models usage counts toward GitHub's rate limits and pricing

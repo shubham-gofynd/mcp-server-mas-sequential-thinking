@@ -19,8 +19,8 @@ class TestGitHubStrategyDefaults:
         """Test that GitHubStrategy has correct default values."""
         strategy = GitHubStrategy()
         
-        assert strategy.default_team_model == "gpt-4o"
-        assert strategy.default_agent_model == "gpt-4o-mini"
+        assert strategy.default_team_model == "openai/gpt-5"
+        assert strategy.default_agent_model == "openai/gpt-5-min"
         assert strategy.api_key_name == "GITHUB_TOKEN"
     
     def test_provider_class_returns_github_openai(self):
@@ -89,8 +89,8 @@ class TestGitHubStrategyEnvironmentOverrides:
         with patch.dict(os.environ, env_clear, clear=False):
             with patch.dict(os.environ, {}, clear=False):  # Remove the keys entirely
                 config = strategy.get_config()
-                assert config.team_model_id == "gpt-4o"
-                assert config.agent_model_id == "gpt-4o-mini"
+                assert config.team_model_id == "openai/gpt-5"
+                assert config.agent_model_id == "openai/gpt-5-min"
 
 
 class TestGitHubStrategyAPIKeyValidation:
@@ -145,8 +145,8 @@ class TestGitHubStrategyGetConfig:
             config = strategy.get_config()
             
             assert config.provider_class.__name__ == 'GitHubOpenAI'
-            assert config.team_model_id == "gpt-4o"
-            assert config.agent_model_id == "gpt-4o-mini"
+            assert config.team_model_id == "openai/gpt-5"
+            assert config.agent_model_id == "openai/gpt-5-min"
             assert config.api_key is None
     
     def test_get_config_with_full_environment(self):
@@ -191,7 +191,7 @@ class TestGitHubOpenAIInitialization:
         mock_openai_chat.return_value = mock_instance
         
         # Expected GitHub Models base URL
-        expected_base_url = "https://models.inference.ai.azure.com"
+        expected_base_url = "https://models.github.ai/inference"
         
         with patch.dict(os.environ, {'GITHUB_TOKEN': 'test-token'}):
             config = strategy.get_config()
@@ -273,8 +273,8 @@ class TestGitHubStrategyIntegration:
         
         # Set up full environment
         env_vars = {
-            'GITHUB_TEAM_MODEL_ID': 'gpt-4o',
-            'GITHUB_AGENT_MODEL_ID': 'gpt-4o-mini', 
+            'GITHUB_TEAM_MODEL_ID': 'openai/gpt-5',
+            'GITHUB_AGENT_MODEL_ID': 'openai/gpt-5-min', 
             'GITHUB_TOKEN': 'ghp_test_token_123456789'
         }
         
@@ -283,8 +283,8 @@ class TestGitHubStrategyIntegration:
             config = strategy.get_config()
             
             # Verify configuration is correct
-            assert config.team_model_id == 'gpt-4o'
-            assert config.agent_model_id == 'gpt-4o-mini'
+            assert config.team_model_id == 'openai/gpt-5'
+            assert config.agent_model_id == 'openai/gpt-5-min'
             assert config.api_key == 'ghp_test_token_123456789'
             assert config.provider_class.__name__ == 'GitHubOpenAI'
 
