@@ -13,6 +13,18 @@ from agno.models.openrouter import OpenRouter
 from agno.models.openai import OpenAIChat
 
 
+class GitHubOpenAI(OpenAIChat):
+    """OpenAI provider configured for GitHub Models API."""
+    
+    def __init__(self, **kwargs):
+        # Set GitHub Models base URL
+        kwargs.setdefault('base_url', 'https://models.github.ai/inference')
+        # GitHub uses personal access tokens instead of API keys
+        if 'api_key' not in kwargs:
+            kwargs['api_key'] = os.environ.get('GITHUB_TOKEN')
+        super().__init__(**kwargs)
+
+
 @dataclass(frozen=True)
 class ModelConfig:
     """Configuration for model provider and IDs."""
@@ -114,16 +126,6 @@ class GitHubStrategy(ProviderStrategy):
     @property
     def provider_class(self):
         """Return GitHub-configured OpenAI class for GitHub Models."""
-        # Create a custom OpenAI class configured for GitHub Models
-        class GitHubOpenAI(OpenAIChat):
-            def __init__(self, **kwargs):
-                # Set GitHub Models base URL
-                kwargs.setdefault('base_url', 'https://models.github.ai/inference')
-                # GitHub uses personal access tokens instead of API keys
-                if 'api_key' not in kwargs:
-                    kwargs['api_key'] = os.environ.get('GITHUB_TOKEN')
-                super().__init__(**kwargs)
-        
         return GitHubOpenAI
     
     @property
