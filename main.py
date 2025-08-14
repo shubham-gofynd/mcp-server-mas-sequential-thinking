@@ -352,17 +352,20 @@ def _create_validated_thought_data(
     needs_more: bool
 ) -> ThoughtData:
     """Create and validate thought data with enhanced error reporting."""
-    return ThoughtData(
-        thought=thought.strip(),
-        thought_number=thought_number,
-        total_thoughts=total_thoughts,
-        next_needed=next_needed,
-        is_revision=is_revision,
-        revises_thought=revises_thought,
-        branch_from=branch_from,
-        branch_id=branch_id.strip() if branch_id else None,
-        needs_more=needs_more
-    )
+    try:
+        return ThoughtData(
+            thought=thought.strip(),
+            thought_number=thought_number,
+            total_thoughts=total_thoughts,
+            next_needed=next_needed,
+            is_revision=is_revision,
+            revises_thought=revises_thought,
+            branch_from=branch_from,
+            branch_id=branch_id.strip() if branch_id else None,
+            needs_more=needs_more
+        )
+    except Exception as e:
+        raise ValueError(f"Invalid thought data: {e}") from e
 
 
 def run() -> None:

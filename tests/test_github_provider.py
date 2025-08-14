@@ -227,15 +227,16 @@ class TestGitHubOpenAIInitialization:
         """Test that GitHubOpenAI passes correct base_url to parent class."""
         from config import GitHubOpenAI
         
-        # Create GitHubOpenAI instance with test token
-        with patch.dict(os.environ, {'GITHUB_TOKEN': 'test-token'}):
+        # Create GitHubOpenAI instance with valid test token
+        valid_token = 'ghp_1234567890abcdef1234567890abcdef1234'
+        with patch.dict(os.environ, {'GITHUB_TOKEN': valid_token}):
             github_client = GitHubOpenAI()
         
         # Verify that OpenAIChat.__init__ was called with correct base_url
         mock_openai_init.assert_called_once()
         call_kwargs = mock_openai_init.call_args[1]
         assert call_kwargs['base_url'] == 'https://models.github.ai/inference'
-        assert call_kwargs['api_key'] == 'test-token'
+        assert call_kwargs['api_key'] == valid_token
 
 
 class TestGitHubStrategyIntegration:
@@ -302,6 +303,97 @@ class TestGitHubStrategyIntegration:
             assert config.agent_model_id == 'openai/gpt-5-min'
             assert config.api_key == 'ghp_test_token_123456789'
             assert config.provider_class.__name__ == 'GitHubOpenAI'
+
+
+class TestEnvironmentVariableHelper:
+    """Test helper method for environment variable handling."""
+    
+    def test_get_env_with_fallback_returns_environment_value(self):
+        """Test that helper returns environment value when present."""
+        strategy = GitHubStrategy()
+        
+        with patch.dict(os.environ, {'TEST_VAR': 'environment_value'}):
+            result = strategy._get_env_with_fallback('TEST_VAR', 'fallback_value')
+            assert result == 'environment_value'
+    
+    def test_get_env_with_fallback_returns_fallback_when_missing(self):
+        """Test that helper returns fallback when environment variable is missing."""
+        strategy = GitHubStrategy()
+        
+        with patch.dict(os.environ, {}, clear=True):
+            result = strategy._get_env_with_fallback('MISSING_VAR', 'fallback_value')
+            assert result == 'fallback_value'
+    
+    def test_get_env_with_fallback_returns_fallback_when_empty(self):
+        """Test that helper returns fallback when environment variable is empty."""
+        strategy = GitHubStrategy()
+        
+        with patch.dict(os.environ, {'EMPTY_VAR': ''}):
+            result = strategy._get_env_with_fallback('EMPTY_VAR', 'fallback_value')
+            assert result == 'fallback_value'
+    
+    def test_get_env_with_fallback_returns_fallback_when_none(self):
+        """Test that helper returns fallback when environment variable is None."""
+        strategy = GitHubStrategy()
+        
+        with patch('os.environ.get', return_value=None):
+            result = strategy._get_env_with_fallback('NULL_VAR', 'fallback_value')
+            assert result == 'fallback_value'
+    
+    def test_get_env_with_fallback_preserves_whitespace_values(self):
+        """Test that helper preserves valid whitespace-only values."""
+        strategy = GitHubStrategy()
+        
+        with patch.dict(os.environ, {'WHITESPACE_VAR': '   '}):
+            result = strategy._get_env_with_fallback('WHITESPACE_VAR', 'fallback_value')
+            assert result == '   '
+
+
+class TestGitHubTokenValidation:
+    """Test GitHub token format validation."""
+    
+    @patch('agno.models.openai.OpenAIChat.__init__', return_value=None)
+    def test_valid_github_token_formats(self, mock_openai_init):
+        """Test that valid GitHub token formats are accepted."""
+        from config import GitHubOpenAI
+        
+        valid_tokens = [
+            'ghp_1234567890abcdef1234567890abcdef1234',  # Classic PAT (40 chars)
+            'github_pat_11ABCDEFG_1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',  # Fine-grained PAT
+            'gho_1234567890abcdef1234567890abcdef12345678',  # OAuth token
+            'ghu_1234567890abcdef1234567890abcdef12345678',  # User-to-server token
+        ]
+        
+        for token in valid_tokens:
+            with patch.dict(os.environ, {'GITHUB_TOKEN': token}):
+                # Should not raise an exception
+                github_client = GitHubOpenAI()
+                assert github_client is not None
+    
+    def test_invalid_github_token_formats_raise_error(self):
+        """Test that invalid GitHub token formats raise validation error."""
+        from config import GitHubOpenAI
+        
+        invalid_tokens = [
+            ('invalid_token', "Invalid GitHub token format"),
+            ('ghp_short', "Invalid GitHub classic PAT length"),
+            ('not_a_github_token_at_all', "Invalid GitHub token format"),
+            ('1234567890', "Invalid GitHub token format"),
+            ('', "GitHub token is required"),
+        ]
+        
+        for token, expected_error in invalid_tokens:
+            with patch.dict(os.environ, {'GITHUB_TOKEN': token}):
+                with pytest.raises(ValueError, match=expected_error):
+                    GitHubOpenAI()
+    
+    def test_missing_github_token_raises_error(self):
+        """Test that missing GitHub token raises appropriate error."""
+        from config import GitHubOpenAI
+        
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ValueError, match="GitHub token is required"):
+                GitHubOpenAI()
 
 
 class TestGitHubStrategyErrorHandling:
