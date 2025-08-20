@@ -69,6 +69,7 @@ This parallel processing leads to substantially higher token usage (potentially 
     - **Groq:** Requires `GROQ_API_KEY`.
     - **DeepSeek:** Requires `DEEPSEEK_API_KEY`.
     - **OpenRouter:** Requires `OPENROUTER_API_KEY`.
+    - **GitHub Models:** Requires `GITHUB_TOKEN`. Access to OpenAI GPT models through GitHub's API.
     - **Kimi K2:** Uses OpenRouter with `OPENROUTER_API_KEY`. Configure using `LLM_PROVIDER=kimi`.
     - Configure the desired provider using the `LLM_PROVIDER` environment variable (defaults to `deepseek`).
 - Exa API Key (required only if using the Researcher agent's capabilities)
@@ -90,12 +91,37 @@ The `env` section within your MCP client configuration should include the API ke
             "mcp-server-mas-sequential-thinking" // Or the path to your main script, e.g., "main.py"
          ],
          "env": {
-            "LLM_PROVIDER": "deepseek", // "ollama", "groq", "openrouter", "kimi"
+            "LLM_PROVIDER": "deepseek", // "ollama", "groq", "openrouter", "github", "kimi"
             // "GROQ_API_KEY": "your_groq_api_key", // Only if LLM_PROVIDER="groq"
             "DEEPSEEK_API_KEY": "your_deepseek_api_key", // Default provider
             // "OPENROUTER_API_KEY": "your_openrouter_api_key", // Only if LLM_PROVIDER="openrouter" or "kimi"
+            // "GITHUB_TOKEN": "your_github_token", // Only if LLM_PROVIDER="github"
             "LLM_BASE_URL": "your_base_url_if_needed", // Optional: If using a custom endpoint for DeepSeek
             "EXA_API_KEY": "your_exa_api_key" // Only if using Exa
+         }
+      }
+   }
+}
+```
+
+### GitHub Models Configuration Example
+
+For using GitHub Models specifically:
+
+```json
+{
+  "mcpServers": {
+      "mas-sequential-thinking": {
+         "command": "uvx",
+         "args": [
+            "mcp-server-mas-sequential-thinking"
+         ],
+         "env": {
+            "LLM_PROVIDER": "github",
+            "GITHUB_TOKEN": "ghp_your_github_personal_access_token",
+            "GITHUB_TEAM_MODEL_ID": "openai/gpt-5", // Optional: Team coordinator model (default: openai/gpt-5)
+            "GITHUB_AGENT_MODEL_ID": "openai/gpt-5-min", // Optional: Specialist agents model (default: openai/gpt-5-min)
+            "EXA_API_KEY": "your_exa_api_key" // Only if using Exa for research tasks
          }
       }
    }
@@ -123,15 +149,17 @@ npx -y @smithery/cli install @FradSer/mcp-server-mas-sequential-thinking --clien
     Create a `.env` file in the project root directory or export the variables directly into your environment:
     ```dotenv
     # --- LLM Configuration ---
-    # Select the LLM provider: "deepseek" (default), "groq", "openrouter", "ollama", or "kimi"
+    # Select the LLM provider: "deepseek" (default), "groq", "openrouter", "github", "ollama", or "kimi"
     LLM_PROVIDER="deepseek"
 
     # Provide the API key for the chosen provider:
     # GROQ_API_KEY="your_groq_api_key"
     DEEPSEEK_API_KEY="your_deepseek_api_key"
     # OPENROUTER_API_KEY="your_openrouter_api_key" # Required for both "openrouter" and "kimi" providers
+    # GITHUB_TOKEN="ghp_your_github_personal_access_token" # Required for LLM_PROVIDER="github"
     # Note: Ollama requires no API key but needs local installation
     # Note: Kimi K2 uses OpenRouter API, so OPENROUTER_API_KEY is required for LLM_PROVIDER="kimi"
+    # Note: GitHub Models requires a GitHub Personal Access Token with appropriate scopes
 
     # Optional: Base URL override (e.g., for custom endpoints)
     # LLM_BASE_URL="your_base_url_if_needed"
@@ -144,6 +172,9 @@ npx -y @smithery/cli install @FradSer/mcp-server-mas-sequential-thinking --clien
     # Example for DeepSeek:
     # DEEPSEEK_TEAM_MODEL_ID="deepseek-chat" # Note: `deepseek-reasoner` is not recommended as it doesn't support function calling
     # DEEPSEEK_AGENT_MODEL_ID="deepseek-chat" # Recommended for specialists
+    # Example for GitHub Models:
+    # GITHUB_TEAM_MODEL_ID="openai/gpt-5" # Team coordinator (default: openai/gpt-5)
+    # GITHUB_AGENT_MODEL_ID="openai/gpt-5-min" # Specialist agents (default: openai/gpt-5-min)
     # Example for OpenRouter:
     # OPENROUTER_TEAM_MODEL_ID="deepseek/deepseek-r1" # Example, adjust as needed
     # OPENROUTER_AGENT_MODEL_ID="deepseek/deepseek-chat" # Example, adjust as needed
@@ -160,6 +191,49 @@ npx -y @smithery/cli install @FradSer/mcp-server-mas-sequential-thinking --clien
     - The `TEAM_MODEL_ID` is used by the Coordinator (`Team` object). This role benefits from strong reasoning, synthesis, and delegation capabilities. Consider using a more powerful model (e.g., `deepseek-chat`, `claude-3-opus`, `gpt-4-turbo`) here, potentially balancing capability with cost/speed.
     - The `AGENT_MODEL_ID` is used by the specialist agents (Planner, Researcher, etc.). These handle focused sub-tasks. A faster or more cost-effective model (e.g., `deepseek-chat`, `claude-3-sonnet`, `llama3-8b`) might be suitable, depending on task complexity and budget/performance needs.
     - Defaults are provided in the code (e.g., in `main.py`) if these environment variables are not set. Experimentation is encouraged to find the optimal balance for your use case.
+
+    **GitHub Models Setup and Available Models:**
+    
+    GitHub Models provides access to OpenAI's GPT models through GitHub's API infrastructure. To use GitHub Models:
+    
+    1. **Get a GitHub Personal Access Token:**
+       - Go to GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)
+       - Generate a new token with appropriate scopes (typically `repo` and `read:user`)
+       - The token format will be `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+    
+    2. **Available Models and Use Cases:**
+       - **`openai/gpt-5`** (Default for Team Coordinator):
+         - Latest GPT-5 model
+         - Best for complex reasoning, coordination, and synthesis tasks
+         - Higher token cost but superior performance for the Team Coordinator role
+         - Excellent function calling capabilities
+       
+       - **`openai/gpt-5-min`** (Default for Specialist Agents):
+         - Lightweight version of GPT-5
+         - Optimized for speed and cost-efficiency
+         - Ideal for focused sub-tasks handled by specialist agents
+         - Good balance of performance and cost for high-volume operations
+       
+       - **`openai/gpt-4o`**:
+         - Previous generation GPT-4 Omni model
+         - Strong reasoning capabilities but slower than gpt-5
+         - Can be used for either role depending on requirements
+       
+       - **`openai/gpt-3.5-turbo`**:
+         - Most cost-effective option
+         - Suitable for simpler tasks or budget-conscious deployments
+         - May have limitations with complex reasoning tasks
+    
+    3. **Recommended Configurations:**
+       - **High Performance:** `GITHUB_TEAM_MODEL_ID="openai/gpt-5"`, `GITHUB_AGENT_MODEL_ID="openai/gpt-5-min"`
+       - **Balanced:** `GITHUB_TEAM_MODEL_ID="openai/gpt-5"`, `GITHUB_AGENT_MODEL_ID="openai/gpt-3.5-turbo"`
+       - **Budget-Conscious:** `GITHUB_TEAM_MODEL_ID="openai/gpt-5-min"`, `GITHUB_AGENT_MODEL_ID="openai/gpt-3.5-turbo"`
+    
+    4. **Token Usage Considerations with GitHub Models:**
+       - GitHub Models usage counts toward GitHub's rate limits and pricing
+       - Monitor your usage through GitHub's billing dashboard
+       - Consider the Multi-Agent System's high token consumption when budgeting
+       - The default configuration (openai/gpt-5 + openai/gpt-5-min) provides the best balance of performance and cost
 
 3.  **Install Dependencies:**
     It's highly recommended to use a virtual environment.

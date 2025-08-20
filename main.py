@@ -365,7 +365,7 @@ def _create_validated_thought_data(
             needs_more=needs_more
         )
     except Exception as e:
-        raise ValidationError(f"Invalid thought data: {e}") from e
+        raise ValueError(f"Invalid thought data: {e}") from e
 
 
 def run() -> None:
