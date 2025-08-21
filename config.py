@@ -15,35 +15,41 @@ from agno.models.openai import OpenAIChat
 
 class GitHubOpenAI(OpenAIChat):
     """OpenAI provider configured for GitHub Models API."""
-    
+
     @staticmethod
     def _validate_github_token(token: str) -> None:
         """Validate GitHub token format."""
         if not token:
             raise ValueError("GitHub token is required but not provided")
-        
+
         # GitHub token prefixes: ghp_ (classic PAT), github_pat_ (fine-grained), gho_ (OAuth), ghu_ (user-to-server)
-        valid_prefixes = ('ghp_', 'github_pat_', 'gho_', 'ghu_')
-        
+        valid_prefixes = ("ghp_", "github_pat_", "gho_", "ghu_")
+
         if not any(token.startswith(prefix) for prefix in valid_prefixes):
-            raise ValueError(f"Invalid GitHub token format. Token must start with one of: {', '.join(valid_prefixes)}")
-        
+            raise ValueError(
+                f"Invalid GitHub token format. Token must start with one of: {', '.join(valid_prefixes)}"
+            )
+
         # Additional length validation for classic tokens
-        if token.startswith('ghp_') and len(token) != 40:
-            raise ValueError("Invalid GitHub classic PAT length. Expected 40 characters.")
-    
+        if token.startswith("ghp_") and len(token) != 40:
+            raise ValueError(
+                "Invalid GitHub classic PAT length. Expected 40 characters."
+            )
+
     def __init__(self, **kwargs):
         # Set GitHub Models base URL
-        kwargs.setdefault('base_url', 'https://models.github.ai/inference')
+        kwargs.setdefault("base_url", "https://models.github.ai/inference")
         # GitHub uses personal access tokens instead of API keys
-        if 'api_key' not in kwargs:
-            kwargs['api_key'] = os.environ.get('GITHUB_TOKEN')
-        
+        if "api_key" not in kwargs:
+            kwargs["api_key"] = os.environ.get("GITHUB_TOKEN")
+
         # Validate the GitHub token format
-        api_key = kwargs.get('api_key')
+        api_key = kwargs.get("api_key")
         if not api_key:
-            raise ValueError("GitHub token is required but not found in GITHUB_TOKEN environment variable")
-        
+            raise ValueError(
+                "GitHub token is required but not found in GITHUB_TOKEN environment variable"
+            )
+
         self._validate_github_token(api_key)
         super().__init__(**kwargs)
 
@@ -51,6 +57,7 @@ class GitHubOpenAI(OpenAIChat):
 @dataclass(frozen=True)
 class ModelConfig:
     """Configuration for model provider and IDs."""
+
     provider_class: Type[Model]
     team_model_id: str
     agent_model_id: str
@@ -59,54 +66,58 @@ class ModelConfig:
 
 class ProviderStrategy(ABC):
     """Abstract strategy for provider configuration."""
-    
+
     @property
     @abstractmethod
     def provider_class(self) -> Type[Model]:
         """Return the provider model class."""
         pass
-    
+
     @property
     @abstractmethod
     def default_team_model(self) -> str:
         """Return default team model ID."""
         pass
-    
+
     @property
     @abstractmethod
     def default_agent_model(self) -> str:
         """Return default agent model ID."""
         pass
-    
+
     @property
     @abstractmethod
     def api_key_name(self) -> Optional[str]:
         """Return API key environment variable name."""
         pass
-    
+
     def _get_env_with_fallback(self, env_var: str, fallback: str) -> str:
         """Get environment variable with fallback to default if missing or empty."""
         value = os.environ.get(env_var)
         return value if value else fallback
-    
+
     def get_config(self) -> ModelConfig:
         """Get complete configuration with environment overrides."""
         prefix = self.__class__.__name__.replace("Strategy", "").upper()
-        
+
         # Get models with fallback to defaults if empty
-        team_model = self._get_env_with_fallback(f"{prefix}_TEAM_MODEL_ID", self.default_team_model)
-        agent_model = self._get_env_with_fallback(f"{prefix}_AGENT_MODEL_ID", self.default_agent_model)
-        
+        team_model = self._get_env_with_fallback(
+            f"{prefix}_TEAM_MODEL_ID", self.default_team_model
+        )
+        agent_model = self._get_env_with_fallback(
+            f"{prefix}_AGENT_MODEL_ID", self.default_agent_model
+        )
+
         # Get API key with None conversion for empty strings
         api_key = os.environ.get(self.api_key_name) if self.api_key_name else None
         if api_key == "":  # Convert empty string to None
             api_key = None
-        
+
         return ModelConfig(
             provider_class=self.provider_class,
             team_model_id=team_model,
             agent_model_id=agent_model,
-            api_key=api_key
+            api_key=api_key,
         )
 
 
@@ -140,26 +151,26 @@ class OllamaStrategy(ProviderStrategy):
 
 class GitHubStrategy(ProviderStrategy):
     """GitHub Models provider strategy.
-    
+
     Uses OpenAI agno provider with GitHub Models API endpoint.
     Requires GITHUB_TOKEN for authentication.
     """
-    
+
     @property
     def provider_class(self):
         """Return GitHub-configured OpenAI class for GitHub Models."""
         return GitHubOpenAI
-    
+
     @property
     def default_team_model(self) -> str:
         """Return default team model for GitHub."""
         return "openai/gpt-5"
-    
+
     @property
     def default_agent_model(self) -> str:
         """Return default agent model for GitHub."""
         return "openai/gpt-5-min"
-    
+
     @property
     def api_key_name(self) -> str:
         """Return GitHub API key environment variable name."""
@@ -187,15 +198,15 @@ def check_required_api_keys() -> list[str]:
     """Check for required API keys using current strategy."""
     provider_name = os.environ.get("LLM_PROVIDER", "deepseek").lower()
     strategy = STRATEGIES.get(provider_name, STRATEGIES["deepseek"])
-    
+
     missing_keys = []
-    
+
     # Check provider API key
     if strategy.api_key_name and not os.environ.get(strategy.api_key_name):
         missing_keys.append(strategy.api_key_name)
-    
+
     # Check EXA API key for research tools
     if not os.environ.get("EXA_API_KEY"):
         missing_keys.append("EXA_API_KEY")
-    
+
     return missing_keys
