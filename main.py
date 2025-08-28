@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import ValidationError
+from pydantic import BaseModel, Field, ValidationError
 from dotenv import load_dotenv
 
 # Import simplified modules
@@ -100,7 +100,6 @@ class ThoughtProcessor:
 
     async def _process_thought_internal(self, thought_data: ThoughtData) -> str:
         """Internal thought processing logic."""
-        # Log the thought with structured data
         logger.info(
             "Processing thought",
             extra={
@@ -113,20 +112,14 @@ class ThoughtProcessor:
         )
         logger.debug(thought_data.format_for_log())
 
-        # Add to session
         self._session.add_thought(thought_data)
 
-        # Prepare input with context
         input_prompt = self._build_input_prompt(thought_data)
-
-        # Process through team with timeout handling
         response = await self._execute_team_processing(input_prompt)
 
-        # Extract and format content
         return self._format_response(response, thought_data)
 
     async def _execute_team_processing(self, input_prompt: str) -> str:
-        """Execute team processing with timeout and retry logic."""
         try:
             response = await self._session.team.arun(input_prompt)
             return getattr(response, "content", "") or str(response)
@@ -135,21 +128,15 @@ class ThoughtProcessor:
             raise ProcessingError(f"Team coordination failed: {e}") from e
 
     def _build_input_prompt(self, thought_data: ThoughtData) -> str:
-        """Build input prompt with appropriate context using modern string formatting."""
         components = [f"Process Thought #{thought_data.thought_number}:\n"]
 
-        # Add context for revisions/branches using match statement
         match thought_data:
-            case ThoughtData(
-                is_revision=True, revises_thought=revision_num
-            ) if revision_num:
+            case ThoughtData(is_revision=True, revises_thought=revision_num) if revision_num:
                 original = self._session.find_thought_content(revision_num)
                 components.append(
                     f'**REVISION of Thought #{revision_num}** (Original: "{original}")\n'
                 )
-            case ThoughtData(branch_from=branch_from, branch_id=branch_id) if (
-                branch_from and branch_id
-            ):
+            case ThoughtData(branch_from=branch_from, branch_id=branch_id) if (branch_from and branch_id):
                 origin = self._session.find_thought_content(branch_from)
                 components.append(
                     f'**BRANCH (ID: {branch_id}) from Thought #{branch_from}** (Origin: "{origin}")\n'
@@ -159,38 +146,30 @@ class ThoughtProcessor:
         return "".join(components)
 
     def _format_response(self, content: str, thought_data: ThoughtData) -> str:
-        """Format response with appropriate guidance."""
         guidance_map = {
             True: "\n\nGuidance: Look for revision/branch recommendations in the response. Formulate the next logical thought.",
             False: "\n\nThis is the final thought. Review the synthesis.",
         }
-
         return content + guidance_map[thought_data.next_needed]
 
 
 class ProcessingError(Exception):
-    """Custom exception for thought processing errors."""
-
     pass
 
 
 @asynccontextmanager
 async def app_lifespan(app) -> AsyncIterator[None]:
-    """Manage application lifecycle with proper resource management."""
     config = ServerConfig.from_env()
     logger.info(
         f"Initializing Sequential Thinking Server with {config.provider} provider"
     )
 
     try:
-        # Validate environment and dependencies
         await _validate_server_requirements()
 
-        # Initialize core components
         team = create_team()
         session = SessionMemory(team=team)
 
-        # Initialize server state
         _server_state.initialize(config, session)
 
         logger.info("Server initialized successfully")
@@ -207,13 +186,10 @@ async def app_lifespan(app) -> AsyncIterator[None]:
 
 
 async def _validate_server_requirements() -> None:
-    """Validate server requirements and configuration."""
-    # Check required API keys
     missing_keys = check_required_api_keys()
     if missing_keys:
         logger.warning(f"Missing API keys: {', '.join(missing_keys)}")
 
-    # Validate critical paths
     log_dir = Path.home() / ".sequential_thinking" / "logs"
     if not log_dir.exists():
         logger.info(f"Creating log directory: {log_dir}")
@@ -221,8 +197,6 @@ async def _validate_server_requirements() -> None:
 
 
 class ServerInitializationError(Exception):
-    """Custom exception for server initialization failures."""
-
     pass
 
 
@@ -232,9 +206,7 @@ mcp = FastMCP(lifespan=app_lifespan)
 
 @mcp.prompt("sequential-thinking")
 def sequential_thinking_prompt(problem: str, context: str = "") -> list[dict]:
-    """Enhanced starter prompt for sequential thinking with better formatting."""
-    # Sanitize inputs
-    problem = problem.strip()[:500]  # Limit problem length
+    problem = problem.strip()[:500]
     context = context.strip()[:300] if context else ""
 
     user_prompt = f"""Initiate sequential thinking for: {problem}
@@ -272,84 +244,61 @@ Ready to begin systematic analysis."""
     ]
 
 
-@mcp.tool()
-async def sequentialthinking(
-    thought: str,
-    thought_number: int,
-    total_thoughts: int,
-    next_needed: bool,
-    is_revision: bool = False,
-    revises_thought: int | None = None,
-    branch_from: int | None = None,
-    branch_id: str | None = None,
-    needs_more: bool = False,
-) -> str:
-    """
-    Advanced sequential thinking tool with multi-agent coordination.
+# === NEW Pydantic Schema & Tool Definition ===
 
-    Processes thoughts through a specialized team of AI agents that coordinate
-    to provide comprehensive analysis, planning, research, critique, and synthesis.
+class ThoughtArgs(BaseModel):
+    """Public tool input schema (camelCase) exactly as in the README."""
+    thought: str
+    thoughtNumber: int = Field(ge=1, description="Sequence number starting at 1")
+    totalThoughts: int = Field(ge=1, description="Estimated total steps (suggest >=5)")
+    nextThoughtNeeded: bool
+    isRevision: bool = False
+    revisesThought: int | None = None
+    branchFromThought: int | None = None
+    branchId: str | None = None
+    needsMoreThoughts: bool = False
 
-    Args:
-        thought: Content of the thinking step (required)
-        thought_number: Sequence number starting from 1 (≥1)
-        total_thoughts: Estimated total thoughts required (≥5)
-        next_needed: Whether another thought step follows this one
-        is_revision: Whether this thought revises a previous thought
-        revises_thought: Thought number being revised (requires is_revision=True)
-        branch_from: Thought number to branch from for alternative exploration
-        branch_id: Unique identifier for the branch (required if branch_from set)
-        needs_more: Whether more thoughts are needed beyond the initial estimate
 
-    Returns:
-        Synthesized response from the multi-agent team with guidance for next steps
-
-    Raises:
-        ProcessingError: When thought processing fails
-        ValidationError: When input validation fails
-        RuntimeError: When server state is invalid
-    """
+@mcp.tool(
+    name="sequentialthinking",
+    description="Multi-agent sequential thinking (MAS) tool — coordinator delegates to specialist agents, returns synthesized guidance."
+)
+async def sequentialthinking(args: ThoughtArgs) -> str:
     try:
-        # Validate server state
         session = _server_state.session
 
-        # Create and validate thought data with enhanced error context
         thought_data = _create_validated_thought_data(
-            thought=thought,
-            thought_number=thought_number,
-            total_thoughts=total_thoughts,
-            next_needed=next_needed,
-            is_revision=is_revision,
-            revises_thought=revises_thought,
-            branch_from=branch_from,
-            branch_id=branch_id,
-            needs_more=needs_more,
+            thought=args.thought,
+            thought_number=args.thoughtNumber,
+            total_thoughts=args.totalThoughts,
+            next_needed=args.nextThoughtNeeded,
+            is_revision=args.isRevision,
+            revises_thought=args.revisesThought,
+            branch_from=args.branchFromThought,
+            branch_id=args.branchId,
+            needs_more=args.needsMoreThoughts,
         )
 
-        # Process through team with error handling
         processor = ThoughtProcessor(session)
         result = await processor.process_thought(thought_data)
 
-        logger.info(f"Successfully processed thought #{thought_number}")
+        logger.info(f"Successfully processed thought #{args.thoughtNumber}")
         return result
 
     except ValidationError as e:
-        error_msg = f"Input validation failed for thought #{thought_number}: {e}"
+        error_msg = f"Input validation failed: {e}"
         logger.error(error_msg)
         return f"Validation Error: {e}"
-
     except ProcessingError as e:
-        error_msg = f"Processing failed for thought #{thought_number}: {e}"
+        error_msg = f"Processing failed: {e}"
         logger.error(error_msg)
         return f"Processing Error: {e}"
-
     except RuntimeError as e:
-        error_msg = f"Server state error for thought #{thought_number}: {e}"
+        error_msg = f"Server state error: {e}"
         logger.error(error_msg)
         return f"Server Error: {e}"
-
     except Exception as e:
-        error_msg = f"Unexpected error processing thought #{thought_number}: {e}"
+        error_msg = f"Unexpected error: {e}"
         logger.exception(error_msg)
         return f"Unexpected Error: {e}"
 
@@ -365,7 +314,6 @@ def _create_validated_thought_data(
     branch_id: str | None,
     needs_more: bool,
 ) -> ThoughtData:
-    """Create and validate thought data with enhanced error reporting."""
     try:
         return ThoughtData(
             thought=thought.strip(),
@@ -383,31 +331,23 @@ def _create_validated_thought_data(
 
 
 def run() -> None:
-    """Run the MCP server with enhanced error handling and graceful shutdown."""
     config = ServerConfig.from_env()
     logger.info(f"Starting Sequential Thinking Server with {config.provider} provider")
-
     try:
-        # Run server with stdio transport
         mcp.run(transport="stdio")
-
     except KeyboardInterrupt:
         logger.info("Server stopped by user (SIGINT)")
-
     except SystemExit as e:
         logger.info(f"Server stopped with exit code: {e.code}")
         raise
-
     except Exception as e:
         logger.error(f"Critical server error: {e}", exc_info=True)
         sys.exit(1)
-
     finally:
         logger.info("Server shutdown sequence complete")
 
 
 def main() -> None:
-    """Main entry point with proper error handling."""
     try:
         run()
     except Exception as e:
