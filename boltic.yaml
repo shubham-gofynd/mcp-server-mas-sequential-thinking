@@ -1,0 +1,34 @@
+# boltic.yaml
+app: "mas-sequential-thinking-mcp"
+region: "asia-south1"
+
+# This is a containerized app; we’ll let Boltic use your Dockerfile
+build:
+  dockerfile: "Dockerfile"  # optional; default is 'Dockerfile' in root
+
+# If your Dockerfile already defines CMD, you can remove 'experimental'.
+# If not, uncomment ONE of the following to run your server:
+experimental:
+  cmd:
+    # Option A: run main.py via uv (common in repos with uv.lock)
+    - "uv"
+    - "run"
+    - "python"
+    - "main.py"
+
+    # Option B (alternative): run module by name (if your package exposes CLI)
+    # - "uv"
+    # - "run"
+    # - "mcp-server-mas-sequential-thinking"
+
+# Runtime environment (non-secrets). Put secrets from the console (next step).
+env:
+  LLM_PROVIDER: "deepseek"   # or "github" | "openrouter" | "kimi" | "groq"
+  # EXA is optional; only if you want research agent features
+  # EXA_API_KEY: "set-in-console"
+
+# Optional: give the container a bit more memory for multi-agent runs
+resources:
+  size: "shared-cpu-1x"
+  memory: "1024"
+  max_memory: "2048"
