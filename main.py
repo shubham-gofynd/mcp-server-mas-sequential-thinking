@@ -67,7 +67,7 @@ class ServerState:
     def initialize(self, config: ServerConfig, session: SessionMemory) -> None:
         """Initialize server state."""
         self._config = config
-        self._session = session
+               self._session = session
 
     def cleanup(self) -> None:
         """Clean up server state."""
@@ -260,10 +260,10 @@ class ThoughtArgs(BaseModel):
 
 
 @mcp.tool(
-    name="sequentialthinking",
-    description="Multi-agent sequential thinking (MAS) tool — coordinator delegates to specialist agents, returns synthesized guidance."
+    name="t1_mas_sequential_thinking",
+    description="Multi-agent sequential thinking (MAS) — coordinator delegates to specialist agents and returns synthesized guidance."
 )
-async def sequentialthinking(args: ThoughtArgs) -> str:
+async def t1_mas_sequential_thinking(args: ThoughtArgs) -> str:
     try:
         session = _server_state.session
 
@@ -334,6 +334,7 @@ def run() -> None:
     config = ServerConfig.from_env()
     logger.info(f"Starting Sequential Thinking Server with {config.provider} provider")
     try:
+        # stdio transport (proxied to HTTP/SSE by mcp-proxy in Docker CMD)
         mcp.run(transport="stdio")
     except KeyboardInterrupt:
         logger.info("Server stopped by user (SIGINT)")
