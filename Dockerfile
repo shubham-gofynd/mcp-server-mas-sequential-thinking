@@ -1,30 +1,28 @@
-# Use a fuller image; Alpine + wheels often hurts build time
+# Use Debian slim so we can install Node + Python easily
 FROM python:3.11-slim
 
+# Prevent .pyc and buffering
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-# System deps (adjust if any lib complains)
+# Install system deps + Node.js (for npx)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl ca-certificates build-essential git \
+    curl gnupg build-essential git \
+ && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+ && apt-get install -y nodejs \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy the whole repo so config.py and everything is present
+# Copy your repo code
 COPY . /app
 
-# Install deps (choose whichever your repo uses)
-# If you have requirements.txt:
-# RUN pip install -r requirements.txt
-# If you use pyproject.toml (PEP 517):
+# Install Python deps
 RUN pip install --upgrade pip && pip install .
 
-# Ensure repo root is importable for `import config`
-ENV PYTHONPATH=/app
+# Install mcp-remote globally
+RUN npm install -g mcp-remote
 
-# Run *from the repo*, not the installed console_script
-# (so main.py can import local config.py)
-CMD ["python", "main.py"]
-
+# Run your stdio server wrapped by mcp-remote
+CMD ["mcp-remote", "python", "main.py"]
