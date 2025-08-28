@@ -35,4 +35,3 @@ EXPOSE 8080
 #   POST /mcp   (JSON-RPC over HTTP)
 #   GET  /sse   (Server-Sent Events)
 CMD ["mcp-proxy", "--transport", "sse", "--pass-environment", "--host", "0.0.0.0", "--port", "8080", "python", "main.py"]
-]
