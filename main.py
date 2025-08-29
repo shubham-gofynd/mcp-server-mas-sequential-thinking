@@ -404,7 +404,7 @@ def run() -> None:
             # Serverless / remote: listen on HTTP (MCP endpoint served at /mcp/)
             host = os.environ.get("HOST", "0.0.0.0")
             port = int(os.environ.get("PORT", "8000"))
-            mcp.run(transport="http", host=host, port=port)
+            mcp.run(transport="http")
 
     except KeyboardInterrupt:
         logger.info("Server stopped by user (SIGINT)")
