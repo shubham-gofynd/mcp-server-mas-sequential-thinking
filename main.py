@@ -391,20 +391,21 @@ def run() -> None:
     config = ServerConfig.from_env()
     logger.info(f"Starting Sequential Thinking Server with {config.provider} provider")
 
-    transport = os.environ.get("MCP_TRANSPORT", "http").strip().lower()
-    if transport not in {"stdio", "http"}:
-        logger.warning(f"Unknown MCP_TRANSPORT={transport}; defaulting to http")
-        transport = "http"
+    transport = os.environ.get("MCP_TRANSPORT", "streamable-http").strip().lower()
+    if transport not in {"stdio", "http", "streamable-http"}:
+        logger.warning(f"Unknown MCP_TRANSPORT={transport}; defaulting to streamable-http")
+        transport = "streamable-http"
+    if transport == "http":
+        logger.warning("MCP_TRANSPORT=http provided; aliasing to streamable-http")
+        transport = "streamable-http"
 
     try:
         if transport == "stdio":
             # Local, desktop MCP hosts (they spawn the process; talks over stdin/stdout)
             mcp.run(transport="stdio")
         else:
-            # Serverless / remote: listen on HTTP (MCP endpoint served at /mcp/)
-            host = os.environ.get("HOST", "0.0.0.0")
-            port = int(os.environ.get("PORT", "8000"))
-            mcp.run(transport="http")
+            # Serverless / remote: Streamable HTTP MCP endpoint at /mcp/
+            mcp.run(transport="streamable-http")
 
     except KeyboardInterrupt:
         logger.info("Server stopped by user (SIGINT)")

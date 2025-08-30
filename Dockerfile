@@ -19,10 +19,8 @@ RUN python -m pip install --upgrade pip && pip install .
 # Boltic typically maps to a port; use 8080 as default
 EXPOSE 8080
 
-# Defaults for serverless
-ENV MCP_TRANSPORT=http \
-    HOST=0.0.0.0 \
-    PORT=8080
+# Defaults for serverless: use Streamable HTTP (no HOST/PORT needed for this path)
+ENV MCP_TRANSPORT=streamable-http
 
-# Run your server; FastMCP serves MCP at /mcp/
+# Run your server; MCP serves at /mcp/
 CMD ["python", "main.py"]
