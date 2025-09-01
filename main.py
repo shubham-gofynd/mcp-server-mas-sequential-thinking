@@ -227,7 +227,7 @@ class ServerInitializationError(Exception):
 
 
 # Initialize FastMCP with lifespan
-mcp = FastMCP(lifespan=app_lifespan)
+mcp = FastMCP(lifespan=app_lifespan, port=8080)
 
 
 @mcp.prompt("sequential-thinking")
