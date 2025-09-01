@@ -405,7 +405,7 @@ def run() -> None:
             mcp.run(transport="stdio")
         else:
             # Serverless / remote: Streamable HTTP MCP endpoint at /mcp/
-            mcp.run(transport="streamable-http")
+            mcp.run(transport="streamable-http", host="0.0.0.0", port=8080)
 
     except KeyboardInterrupt:
         logger.info("Server stopped by user (SIGINT)")
