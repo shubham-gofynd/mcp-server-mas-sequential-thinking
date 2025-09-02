@@ -12,8 +12,8 @@ env:
   # You can keep them if you want, but they will be ignored:
   # HOST: "0.0.0.0"
   # PORT: "8080"
-  DEEPSEEK_API_KEY: "sk-ae7529c6aab24edab3606a168368dfad"
-  EXA_API_KEY: "15b567d1-9af3-4ae3-bd49-e5d5bee228b6"
+  DEEPSEEK_API_KEY: "your_deepseek_api_key"
+  EXA_API_KEY: "your_exa_api_key"
 
 resources:
   size: "shared-cpu-1x"

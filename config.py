@@ -137,8 +137,8 @@ class GroqStrategy(ProviderStrategy):
 
 class OpenRouterStrategy(ProviderStrategy):
     provider_class = OpenRouter
-    default_team_model = "deepseek/deepseek-chat-v3-0324"
-    default_agent_model = "deepseek/deepseek-r1"
+    default_team_model = "meta-llama/llama-3.1-70b-instruct"
+    default_agent_model = "meta-llama/llama-3.1-8b-instruct"
     api_key_name = "OPENROUTER_API_KEY"
 
 
