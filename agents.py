@@ -5,6 +5,7 @@ from typing import Dict, List, Type
 from agno.agent import Agent
 from agno.models.base import Model
 from agno.tools.thinking import ThinkingTools
+from agno.tools.reasoning import ReasoningTools
 from agno.tools.exa import ExaTools
 
 
@@ -51,7 +52,7 @@ class AgentFactory:
         "analyzer": AgentCapability(
             role="Core Analyst",
             description="Performs analysis based on delegated analytical sub-tasks",
-            tools=[ThinkingTools],
+            tools=[ThinkingTools, ReasoningTools],
             role_description="Analyze patterns, evaluate logic, and generate insights for analytical sub-tasks",
         ),
         "critic": AgentCapability(
