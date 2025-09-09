@@ -14,7 +14,7 @@ COPY . /app
 
 # Install your project and its deps
 # If you have requirements.txt, prefer: pip install -r requirements.txt
-RUN python -m pip install --upgrade pip && pip install .
+RUN python -m pip install --upgrade "pip<25" && pip install .
 
 # Boltic typically maps to a port; use 8080 as default
 EXPOSE 8080

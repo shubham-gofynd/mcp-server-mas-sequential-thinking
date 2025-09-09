@@ -1,6 +1,6 @@
 [project]
 name = "mcp-server-mas-sequential-thinking"
-version = "0.4.0"
+version = "0.4.1"
 description = "MCP Agent Implementation for Sequential Thinking"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -12,7 +12,7 @@ dependencies = [
     "agno>=1.8.1,<2.0.0",
     "exa-py>=1.0.8,<2.0.0",
     "python-dotenv",
-    "mcp>=1.14.0,<2.0.0",
+    "mcp>=1.13.1,<2.0.0",
     "groq",
     "ollama",
     "openrouter",
