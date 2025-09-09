@@ -9,10 +9,10 @@ authors = [
     { name = "Alain Ivars", email = "alainivars@gmail.com" },
 ]
 dependencies = [
-    "agno>=0.2.4",
-    "exa-py",
+    "agno>=1.8.1,<2.0.0",
+    "exa-py>=1.0.8,<2.0.0",
     "python-dotenv",
-    "mcp>=1.9.0,<2.0.0",
+    "mcp>=1.14.0,<2.0.0",
     "groq",
     "ollama",
     "openrouter",
