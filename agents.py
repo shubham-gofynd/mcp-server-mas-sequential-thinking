@@ -44,18 +44,28 @@ class AgentFactory:
             description="Develops strategic plans and roadmaps based on delegated sub-tasks",
             tools=[
                 # Lean: structured planning via think; analyze off to keep runs fast
-                ReasoningTools(think=True, analyze=False, add_instructions=True, add_few_shot=True),
+                ReasoningTools(think=True, analyze=True, add_instructions=True, add_few_shot=True),
             ],
             role_description="Develop strategic plans, roadmaps, and process designs for planning-related sub-tasks",
         ),
         "researcher": AgentCapability(
             role="Information Gatherer",
-            description="Gathers and validates information based on delegated research sub-tasks",
+            description=("Gathers and validates information based on delegated research sub-tasks."
+            "You have access to ExaTools for web research. "
+            "Use the following tool functions when relevant:\n"
+            "- search_exa(query: str, num_results: int = 5, category: Optional[str]) → run a web search and return JSON results.\n"
+            "- get_contents(urls: list[str]) → fetch full content for given URLs.\n"
+            "- find_similar(url: str, num_results: int = 5) → discover pages similar to a given URL.\n"
+            "- exa_answer(query: str, text: bool = False) → generate an answer with citations based on Exa search results.\n"
+            "- research(instructions: str, output_schema: Optional[dict]) → create and poll a deeper research task.\n"
+            "Always call these tools with valid JSON arguments (no free-text). "
+            "If a required argument is missing, ask for clarification rather than inventing values. "
+            "Do not invent new tool names — only use the ones listed above."),
             tools=[
                 # Light reasoning helps shape queries
-                ReasoningTools(think=True, analyze=False, add_instructions=True, add_few_shot=True),
+                ReasoningTools(think=True, analyze=True, add_instructions=True, add_few_shot=True),
                 # Full Exa capability (search_exa, get_contents, find_similar, exa_answer)
-                ExaTools(),
+                ExaTools(api_key="15b567d1-9af3-4ae3-bd49-e5d5bee228b6"),
             ],
             role_description="Find, gather, and validate information using research tools for information-related sub-tasks",
         ),
@@ -82,7 +92,7 @@ class AgentFactory:
             description="Integrates information or forms conclusions based on delegated synthesis sub-tasks",
             tools=[
                 # Lean synthesis via think; analyze off to keep runs short
-                ReasoningTools(think=True, analyze=False, add_instructions=True, add_few_shot=True),
+                ReasoningTools(think=True, analyze=True, add_instructions=True, add_few_shot=True),
             ],
             role_description="Integrate information, synthesize ideas, and form conclusions for synthesis sub-tasks",
         ),
