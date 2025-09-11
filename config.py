@@ -130,8 +130,8 @@ class DeepSeekStrategy(ProviderStrategy):
 
 class GroqStrategy(ProviderStrategy):
     provider_class = Groq
-    default_team_model = "deepseek-r1-distill-llama-70b"
-    default_agent_model = "qwen-2.5-32b"
+    default_team_model = "openai/gpt-oss-120b"
+    default_agent_model = "llama-3.3-70b-versatile"
     api_key_name = "GROQ_API_KEY"
 
 
