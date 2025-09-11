@@ -40,8 +40,8 @@ def create_team() -> Team:
             "Synthesize specialist responses coherently",
             "Recommend revisions or branches based on analysis",
         ],
-        enable_agentic_context=False,
-        share_member_interactions=False,
+        enable_agentic_context=True,
+        share_member_interactions=True,
         markdown=True,
         add_datetime_to_instructions=True,
     )

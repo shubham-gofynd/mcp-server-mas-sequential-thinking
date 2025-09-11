@@ -8,6 +8,16 @@ from agno.tools.reasoning import ReasoningTools
 from agno.tools.exa import ExaTools
 
 
+TOOL_CALL_CONTRACT = [
+    "TOOL-CALL CONTRACT (MANDATORY):",
+    "- Output ONLY a single JSON OBJECT for tool arguments (no arrays/strings/markdown).",
+    "- ReasoningTools.think: {\"title\": string, \"thought\": string}.",
+    "- ReasoningTools.analyze: {\"title\": string, \"result\": string, \"analysis\": string}.",
+    "- ExaTools.*: always pass an OBJECT (e.g., {\"query\": \"...\", \"num_results\": 5}).",
+    "- Do NOT add extra keys (e.g., 'confidence') or dotted keys.",
+]
+
+
 @dataclass(frozen=True)
 class AgentCapability:
     """Defines agent capabilities and configuration (stores tool INSTANCES)."""
@@ -22,12 +32,12 @@ class AgentCapability:
         return [
             "You are a specialist agent receiving specific sub-tasks from the Team Coordinator.",
             f"Your role: {self.role_description}",
+            "For each sub-task, ALWAYS follow: 1) ReasoningTools.think → 2) Tool call (if needed) → 3) ReasoningTools.analyze.",
             "Process: 1) Understand the delegated sub-task, 2) Use tools as needed, 3) Provide focused results, 4) Return response to Coordinator.",
             "Focus on accuracy and relevance for your assigned task.",
-            # Guardrails to reduce malformed tool calls / invented names:
             "Only call tools that appear in tools/list. Never invent tool names.",
             "When calling a tool, output only a JSON object containing the tool's arguments (no extra prose).",
-        ]
+        ] + TOOL_CALL_CONTRACT
 
     def create_tools(self) -> List[Any]:
         """Return the pre-instantiated tool instances."""
