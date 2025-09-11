@@ -149,6 +149,13 @@ class OllamaStrategy(ProviderStrategy):
     api_key_name = None  # No API key required
 
 
+class OpenAIStrategy(ProviderStrategy):
+    provider_class = OpenAIChat
+    default_team_model = "o4-mini"
+    default_agent_model = "gpt-4o-mini"
+    api_key_name = "OPENAI_API_KEY"
+
+
 class GitHubStrategy(ProviderStrategy):
     """GitHub Models provider strategy.
 
@@ -184,6 +191,7 @@ STRATEGIES = {
     "openrouter": OpenRouterStrategy(),
     "ollama": OllamaStrategy(),
     "github": GitHubStrategy(),
+    "openai": OpenAIStrategy(),
 }
 
 
