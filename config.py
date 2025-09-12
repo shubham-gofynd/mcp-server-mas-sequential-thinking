@@ -151,8 +151,8 @@ class OllamaStrategy(ProviderStrategy):
 
 class OpenAIStrategy(ProviderStrategy):
     provider_class = OpenAIChat
-    default_team_model = "o4-mini"
-    default_agent_model = "o4-mini"
+    default_team_model = "gpt-4.1-mini"
+    default_agent_model = "gpt-5-mini"
     api_key_name = "OPENAI_API_KEY"
 
 
