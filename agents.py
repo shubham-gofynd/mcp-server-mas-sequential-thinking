@@ -56,7 +56,7 @@ class AgentFactory:
                 # Lean: structured planning via think; analyze off to keep runs fast
                 ReasoningTools(think=True, analyze=True, add_instructions=True, add_few_shot=True),
             ],
-            role_description="Develop strategic plans, roadmaps, and process designs for planning-related sub-tasks",
+            role_description="Develop strategic business plans, revenue optimization, and growth roadmaps focusing on actionable outcomes and implementation details",
         ),
         "researcher": AgentCapability(
             role="Information Gatherer",
@@ -77,7 +77,7 @@ class AgentFactory:
                 # Full Exa capability (search_exa, get_contents, find_similar, exa_answer)
                 ExaTools(api_key="15b567d1-9af3-4ae3-bd49-e5d5bee228b6"),
             ],
-            role_description="Find, gather, and validate information using research tools for information-related sub-tasks",
+            role_description="Find business-relevant information: market trends, competitor strategies, customer insights, and industry best practices for actionable intelligence",
         ),
         "analyzer": AgentCapability(
             role="Core Analyst",
@@ -86,7 +86,7 @@ class AgentFactory:
                 # Full reasoning where depth matters
                 ReasoningTools(think=True, analyze=True, add_instructions=True, add_few_shot=True),
             ],
-            role_description="Analyze patterns, evaluate logic, and generate insights for analytical sub-tasks",
+            role_description="Analyze business data, identify patterns, evaluate opportunities, and generate actionable insights for strategic decision-making",
         ),
         "critic": AgentCapability(
             role="Quality Controller",
@@ -95,7 +95,7 @@ class AgentFactory:
                 # Full reasoning for critique (you can set analyze=False if you prefer)
                 ReasoningTools(think=True, analyze=True, add_instructions=True, add_few_shot=True),
             ],
-            role_description="Evaluate assumptions, identify flaws, and provide constructive critique for evaluation sub-tasks",
+            role_description="Evaluate business assumptions, identify implementation risks, and provide constructive critique for improving strategic plans and execution",
         ),
         "synthesizer": AgentCapability(
             role="Integration Specialist",
@@ -104,7 +104,7 @@ class AgentFactory:
                 # Lean synthesis via think; analyze off to keep runs short
                 ReasoningTools(think=True, analyze=True, add_instructions=True, add_few_shot=True),
             ],
-            role_description="Integrate information, synthesize ideas, and form conclusions for synthesis sub-tasks",
+            role_description="Integrate insights into comprehensive business strategies, create implementation roadmaps, and synthesize actionable recommendations",
         ),
     }
 

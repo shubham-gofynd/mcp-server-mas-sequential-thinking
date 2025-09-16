@@ -155,7 +155,12 @@ class ThoughtProcessor:
                     f'**BRANCH (ID: {branch_id}) from Thought #{branch_from}** (Origin: "{origin}")\n'
                 )
 
-        components.append(f'\nThought Content: "{thought_data.thought}"')
+        # Add contextual insights from previous thoughts
+        context = self._session.get_contextual_insights(thought_data.thought_number)
+        if context:
+            components.append(f'\nPrevious Context: {context}\n')
+
+        components.append(f'\nCurrent Thought: "{thought_data.thought}"')
         return "".join(components)
 
     def _format_response(self, content: str, thought_data: ThoughtData) -> str:

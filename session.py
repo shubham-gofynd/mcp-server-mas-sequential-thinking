@@ -40,3 +40,33 @@ class SessionMemory:
     def get_current_branch_id(self, thought: ThoughtData) -> str:
         """Get the current branch ID for a thought."""
         return thought.branch_id if thought.branch_from is not None else "main"
+
+    def get_contextual_insights(self, current_thought_number: int) -> str:
+        """Extract key insights from previous thoughts for context"""
+        if current_thought_number <= 1:
+            return ""
+        
+        previous_thoughts = self.thought_history[:current_thought_number-1]
+        if not previous_thoughts:
+            return ""
+        
+        # Extract key insights from existing thought history
+        insights = []
+        decisions = []
+        
+        for thought in previous_thoughts:
+            thought_content = thought.thought.lower()
+            
+            # Simple pattern extraction for context building
+            if any(word in thought_content for word in ["recommend", "suggest", "should"]):
+                decisions.append(f"T{thought.thought_number}: {thought.thought[:80]}...")
+            elif any(word in thought_content for word in ["found", "discovered", "identified"]):
+                insights.append(f"T{thought.thought_number}: {thought.thought[:80]}...")
+        
+        context_parts = []
+        if insights:
+            context_parts.append(f"Key Insights: {'; '.join(insights[:2])}")
+        if decisions:
+            context_parts.append(f"Decisions Made: {'; '.join(decisions[:2])}")
+        
+        return " | ".join(context_parts) if context_parts else ""
