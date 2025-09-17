@@ -42,7 +42,7 @@ class SessionMemory:
         return thought.branch_id if thought.branch_from is not None else "main"
 
     def get_contextual_insights(self, current_thought_number: int) -> str:
-        """Extract key insights from previous thoughts for context"""
+        """Extract commerce-focused insights from previous thoughts for accelerated context"""
         if current_thought_number <= 1:
             return ""
         
@@ -50,23 +50,40 @@ class SessionMemory:
         if not previous_thoughts:
             return ""
         
-        # Extract key insights from existing thought history
-        insights = []
-        decisions = []
+        # Commerce-specific insight extraction patterns
+        market_insights = []
+        revenue_insights = []
+        customer_insights = []
+        strategic_decisions = []
         
         for thought in previous_thoughts:
             thought_content = thought.thought.lower()
             
-            # Simple pattern extraction for context building
-            if any(word in thought_content for word in ["recommend", "suggest", "should"]):
-                decisions.append(f"T{thought.thought_number}: {thought.thought[:80]}...")
-            elif any(word in thought_content for word in ["found", "discovered", "identified"]):
-                insights.append(f"T{thought.thought_number}: {thought.thought[:80]}...")
+            # Market & Competitive Intelligence
+            if any(word in thought_content for word in ["market", "competitor", "trend", "industry", "seasonal"]):
+                market_insights.append(f"T{thought.thought_number}: {thought.thought[:100]}...")
+            
+            # Revenue & Performance Insights  
+            elif any(word in thought_content for word in ["revenue", "profit", "roi", "conversion", "sales", "growth"]):
+                revenue_insights.append(f"T{thought.thought_number}: {thought.thought[:100]}...")
+            
+            # Customer & Journey Insights
+            elif any(word in thought_content for word in ["customer", "persona", "journey", "behavior", "segment"]):
+                customer_insights.append(f"T{thought.thought_number}: {thought.thought[:100]}...")
+            
+            # Strategic Decisions & Recommendations
+            elif any(word in thought_content for word in ["recommend", "strategy", "implement", "execute", "optimize"]):
+                strategic_decisions.append(f"T{thought.thought_number}: {thought.thought[:100]}...")
         
+        # Build commerce-focused context
         context_parts = []
-        if insights:
-            context_parts.append(f"Key Insights: {'; '.join(insights[:2])}")
-        if decisions:
-            context_parts.append(f"Decisions Made: {'; '.join(decisions[:2])}")
+        if market_insights:
+            context_parts.append(f"Market Intelligence: {'; '.join(market_insights[:2])}")
+        if revenue_insights:
+            context_parts.append(f"Revenue Insights: {'; '.join(revenue_insights[:2])}")
+        if customer_insights:
+            context_parts.append(f"Customer Intelligence: {'; '.join(customer_insights[:2])}")
+        if strategic_decisions:
+            context_parts.append(f"Strategic Decisions: {'; '.join(strategic_decisions[:2])}")
         
         return " | ".join(context_parts) if context_parts else ""

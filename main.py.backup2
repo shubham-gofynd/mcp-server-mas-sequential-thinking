@@ -18,6 +18,7 @@ from session import SessionMemory
 from team import create_team
 from utils import setup_logging
 
+from agno import enable_dashboard
 # Initialize environment and logging
 load_dotenv()
 logger = setup_logging()
@@ -237,69 +238,35 @@ mcp.settings.host="0.0.0.0"
 
 @mcp.prompt("sequential-thinking")
 def sequential_thinking_prompt(problem: str, context: str = "") -> list[dict]:
-    """Commerce-native sequential thinking prompt that activates deep domain expertise."""
+    """Enhanced starter prompt for sequential thinking with better formatting."""
     # Sanitize inputs
     problem = problem.strip()[:500]  # Limit problem length
     context = context.strip()[:300] if context else ""
 
-    user_prompt = f"""COMMERCE STRATEGIC ANALYSIS REQUEST: {problem}
-{f'Business Context: {context}' if context else ''}"""
+    user_prompt = f"""Initiate sequential thinking for: {problem}
+{f'Context: {context}' if context else ''}"""
 
-    assistant_guide = f"""Initiating Commerce Sequential Thinking Engine for: {problem}
+    assistant_guide = f"""Starting sequential thinking process for: {problem}
 
-COMMERCE DOMAIN ACTIVATION:
-You are now operating as an Autonomous Commerce Intelligence System with deep expertise in:
-• Retail Operations & Omnichannel Strategy
-• Customer Journey Optimization & Personalization  
-• Market Dynamics & Competitive Intelligence
-• Seasonal Commerce & Campaign Strategy
-• Revenue Optimization & Growth Planning
-• Inventory Management & Supply Chain
-• Digital Marketing & Brand Amplification
+Process Guidelines:
+1. Estimate at least 5 total thoughts initially
+2. Begin with: "Plan comprehensive analysis for: {problem}"
+3. Use revisions (isRevision=True) to improve previous thoughts  
+4. Use branching (branchFromThought, branchId) for alternative approaches
+5. Each thought should be detailed with clear reasoning
+6. Progress systematically through analysis phases
 
-COMMERCE THINKING FRAMEWORK:
-Phase 1: Market Intelligence (Researcher → Analyzer)
-- Competitive landscape analysis
-- Consumer behavior patterns
-- Market trends and seasonality
-- Channel performance dynamics
+System Architecture:
+- Multi-agent coordination team with specialized roles
+- Planner, Researcher, Analyzer, Critic, and Synthesizer agents
+- Intelligent delegation based on thought complexity
+- Comprehensive synthesis of specialist responses
 
-Phase 2: Strategic Planning (Planner → Critic)  
-- Customer journey mapping
-- Revenue optimization strategy
-- Omnichannel execution planning
-- Risk assessment and mitigation
-
-Phase 3: Execution Design (Synthesizer)
-- Granular implementation roadmap
-- Cross-functional team coordination
-- Performance measurement framework
-- Iterative optimization strategy
-
-COORDINATOR INTELLIGENCE:
-Your multi-agent team specializes in:
-• PLANNER: Revenue optimization, growth roadmaps, strategic business planning
-• RESEARCHER: Market trends, competitor strategies, customer insights, industry intelligence  
-• ANALYZER: Business data analysis, pattern identification, opportunity evaluation
-• CRITIC: Risk assessment, assumption validation, implementation feasibility
-• SYNTHESIZER: Strategy integration, implementation roadmaps, actionable recommendations
-
-COMMERCE EXECUTION STANDARDS:
-Think like a Chief Commerce Officer - every thought must be:
-✓ Granular and actionable (not generic advice)
-✓ Revenue-focused with measurable outcomes
-✓ Omnichannel aware (online + offline integration)
-✓ Customer journey optimized
-✓ Seasonally intelligent and market-responsive
-✓ Competitive advantage driven
-
-Begin with Commerce Intelligence Analysis: "{problem}"
-
-FIRST THOUGHT GUIDANCE: Start with "Analyzing commerce opportunity: {problem}" and immediately activate market intelligence gathering through the Researcher while the Analyzer evaluates business context and competitive positioning."""
+Ready to begin systematic analysis."""
 
     return [
         {
-            "description": "Commerce-native sequential thinking engine with domain expertise activation",
+            "description": "Enhanced sequential thinking starter with comprehensive guidelines",
             "messages": [
                 {"role": "user", "content": {"type": "text", "text": user_prompt}},
                 {
@@ -468,4 +435,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    # Enable Agno dashboard on port 8081
+    enable_dashboard(port=8081)
     main()
