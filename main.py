@@ -31,6 +31,7 @@ class ServerConfig:
     log_level: str = "INFO"
     max_retries: int = 3
     timeout: float = 30.0
+    http_mcp_url: str | None = None
 
     @classmethod
     def from_env(cls) -> "ServerConfig":
@@ -40,6 +41,7 @@ class ServerConfig:
             log_level=os.environ.get("LOG_LEVEL", "INFO"),
             max_retries=int(os.environ.get("MAX_RETRIES", "3")),
             timeout=float(os.environ.get("TIMEOUT", "30.0")),
+            http_mcp_url=os.environ.get("HTTP_MCP_URL"),
         )
 
 
@@ -138,22 +140,20 @@ class ThoughtProcessor:
         """Build input prompt with appropriate context using modern string formatting."""
         components = [f"Process Thought #{thought_data.thought_number}:\n"]
 
-        # Add context for revisions/branches using match statement
-        match thought_data:
-            case ThoughtData(
-                is_revision=True, revises_thought=revision_num
-            ) if revision_num:
-                original = self._session.find_thought_content(revision_num)
-                components.append(
-                    f'**REVISION of Thought #{revision_num}** (Original: "{original}")\n'
-                )
-            case ThoughtData(branch_from=branch_from, branch_id=branch_id) if (
-                branch_from and branch_id
-            ):
-                origin = self._session.find_thought_content(branch_from)
-                components.append(
-                    f'**BRANCH (ID: {branch_id}) from Thought #{branch_from}** (Origin: "{origin}")\n'
-                )
+        # Add context for revisions/branches using conditional logic
+        if thought_data.is_revision and thought_data.revises_thought:
+            revision_num = thought_data.revises_thought
+            original = self._session.find_thought_content(revision_num)
+            components.append(
+                f'**REVISION of Thought #{revision_num}** (Original: "{original}")\n'
+            )
+        elif thought_data.branch_from and thought_data.branch_id:
+            branch_from = thought_data.branch_from
+            branch_id = thought_data.branch_id
+            origin = self._session.find_thought_content(branch_from)
+            components.append(
+                f'**BRANCH (ID: {branch_id}) from Thought #{branch_from}** (Origin: "{origin}")\n'
+            )
 
         # Add contextual insights from previous thoughts
         context = self._session.get_contextual_insights(thought_data.thought_number)

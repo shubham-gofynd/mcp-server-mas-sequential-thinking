@@ -3,7 +3,7 @@
 import logging
 from agno.team.team import Team
 from config import get_model_config
-from agents import create_all_agents
+from agents import create_all_agents, create_all_agents_with_config
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +47,16 @@ def create_team() -> Team:
     team_model = config.provider_class(id=config.team_model_id)
     agent_model = config.provider_class(id=config.agent_model_id)
 
-    # Create specialist agents
-    agents = create_all_agents(agent_model)
+    # Get server config for HTTP MCP integration
+    from main import _server_state
+    try:
+        server_config = _server_state.config
+        # Create specialist agents with config support
+        agents = create_all_agents_with_config(agent_model, server_config)
+    except RuntimeError:
+        # Fallback to regular agent creation if server state not initialized
+        logger.warning("Server state not initialized, creating agents without HTTP MCP support")
+        agents = create_all_agents(agent_model)
 
     # Create and configure team
     team = Team(

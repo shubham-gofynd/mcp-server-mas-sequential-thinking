@@ -2,10 +2,12 @@
 
 from dataclasses import dataclass
 from typing import Any, Dict, List
+import logging
 from agno.agent import Agent
 from agno.models.base import Model
 from agno.tools.reasoning import ReasoningTools
 from agno.tools.exa import ExaTools
+from agno.tools.mcp import MCPTools
 
 
 TOOL_CALL_CONTRACT = [
@@ -81,12 +83,12 @@ class AgentFactory:
         ),
         "analyzer": AgentCapability(
             role="Commerce Data Analyst",
-            description="Performs commerce-focused analysis based on delegated analytical sub-tasks",
+            description="Performs commerce-focused analysis based on delegated analytical sub-tasks with access to external commerce data via MCP tools",
             tools=[
                 # Full reasoning where depth matters
                 ReasoningTools(think=True, analyze=True, add_instructions=True, add_few_shot=True),
             ],
-            role_description="Business Intelligence Expert: Analyze customer data patterns, revenue performance metrics, market opportunity sizing, competitive positioning, campaign effectiveness, and ROI optimization. Generate data-driven insights for strategic commerce decisions.",
+            role_description="Business Intelligence Expert: Analyze customer data patterns, revenue performance metrics, market opportunity sizing, competitive positioning, campaign effectiveness, and ROI optimization. Generate data-driven insights for strategic commerce decisions using both internal reasoning and external commerce data sources.",
         ),
         "critic": AgentCapability(
             role="Commerce Risk Assessor",
@@ -141,6 +143,49 @@ class AgentFactory:
         """Create all specialist agents using factory pattern."""
         return {agent_type: cls.create_agent(agent_type, model) for agent_type in cls.CAPABILITIES.keys()}
 
+    @classmethod
+    def create_agent_with_config(cls, agent_type: str, model: Model, config, **kwargs) -> Agent:
+        """Create agent with configuration support for HTTP MCP tools."""
+        if agent_type not in cls.CAPABILITIES:
+            raise ValueError(f"Unknown agent type: {agent_type}. Available: {list(cls.CAPABILITIES.keys())}")
+
+        capability = cls.CAPABILITIES[agent_type]
+        tools = capability.create_tools().copy()
+        
+        # Add HTTP MCP tools to analyzer only if configured
+        if agent_type == "analyzer" and hasattr(config, 'http_mcp_url') and config.http_mcp_url:
+            try:
+                mcp_tools = MCPTools(url=config.http_mcp_url)
+                tools.append(mcp_tools)
+                logger = logging.getLogger(__name__)
+                logger.info(f"Added HTTP MCP tools to analyzer: {config.http_mcp_url}")
+            except Exception as e:
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to add HTTP MCP tools to analyzer: {e}")
+        
+        instructions = capability.get_instructions()
+        extra = kwargs.pop("extra_instructions", None)
+        if extra:
+            instructions.extend(extra)
+
+        return Agent(
+            name=agent_type.title(),
+            role=capability.role,
+            description=capability.description,
+            tools=tools,
+            instructions=instructions,
+            model=model,
+            add_datetime_to_instructions=True,
+            markdown=True,
+            **kwargs,
+        )
+
+    @classmethod  
+    def create_all_agents_with_config(cls, model: Model, config) -> Dict[str, Agent]:
+        """Create all agents with config support."""
+        return {agent_type: cls.create_agent_with_config(agent_type, model, config) 
+                for agent_type in cls.CAPABILITIES.keys()}
+
 
 # Convenience functions for backward compatibility
 def create_agent(agent_type: str, model: Model, **kwargs) -> Agent:
@@ -149,3 +194,11 @@ def create_agent(agent_type: str, model: Model, **kwargs) -> Agent:
 
 def create_all_agents(model: Model) -> Dict[str, Agent]:
     return AgentFactory.create_all_agents(model)
+
+
+def create_agent_with_config(agent_type: str, model: Model, config, **kwargs) -> Agent:
+    return AgentFactory.create_agent_with_config(agent_type, model, config, **kwargs)
+
+
+def create_all_agents_with_config(model: Model, config) -> Dict[str, Agent]:
+    return AgentFactory.create_all_agents_with_config(model, config)
